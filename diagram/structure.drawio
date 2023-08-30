@@ -1,6 +1,6 @@
-<mxfile host="app.diagrams.net" modified="2023-08-30T19:47:49.584Z" agent="5.0 (Windows)" etag="hVFsXjbw_GsLyLKczDEL" version="20.8.23" type="github">
+<mxfile host="app.diagrams.net" modified="2023-08-30T19:56:43.157Z" agent="5.0 (Windows)" etag="djKAU1X1P0sX4F8sauVy" version="20.8.23" type="github">
   <diagram name="Page-1" id="zOcH9njF6EInV7z0TZXn">
-    <mxGraphModel dx="993" dy="806" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="827" pageHeight="1169" math="0" shadow="0">
+    <mxGraphModel dx="1820" dy="806" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="827" pageHeight="1169" math="0" shadow="0">
       <root>
         <mxCell id="0" />
         <mxCell id="1" parent="0" />
@@ -176,6 +176,30 @@
         </mxCell>
         <mxCell id="rjELyybHD1pyIOP6_-TY-67" value="Value&lt;br&gt;&lt;i&gt;forest&lt;br&gt;&lt;/i&gt;" style="rounded=0;whiteSpace=wrap;html=1;" parent="1" vertex="1">
           <mxGeometry x="320" y="1160" width="80" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="u2U_Ubxwq1fati4mEcYp-3" style="edgeStyle=orthogonalEdgeStyle;orthogonalLoop=1;jettySize=auto;html=1;exitX=0;exitY=0.5;exitDx=0;exitDy=0;entryX=1;entryY=0.5;entryDx=0;entryDy=0;strokeColor=default;curved=1;endArrow=open;endFill=0;" edge="1" parent="1" source="u2U_Ubxwq1fati4mEcYp-2" target="rjELyybHD1pyIOP6_-TY-8">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="u2U_Ubxwq1fati4mEcYp-2" value="classes are pre-built feature &#39;templates&#39;" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;" vertex="1" parent="1">
+          <mxGeometry x="490" y="250" width="120" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="u2U_Ubxwq1fati4mEcYp-5" style="edgeStyle=orthogonalEdgeStyle;curved=1;orthogonalLoop=1;jettySize=auto;html=1;entryX=0.5;entryY=0;entryDx=0;entryDy=0;strokeColor=default;endArrow=open;endFill=0;" edge="1" parent="1" source="u2U_Ubxwq1fati4mEcYp-4" target="rjELyybHD1pyIOP6_-TY-6">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="u2U_Ubxwq1fati4mEcYp-4" value="in addition to a default set of features, users can add custom features using pre-defined classes&lt;br&gt;&lt;br&gt;customisable feature name, icon, selections&lt;br&gt;&lt;br&gt;e.g. feature &#39;difficutly&#39; with a &#39;boot&#39; icon and selections &#39;easy,moderate,high&#39;" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;" vertex="1" parent="1">
+          <mxGeometry x="-80" y="250" width="120" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="u2U_Ubxwq1fati4mEcYp-7" style="edgeStyle=orthogonalEdgeStyle;curved=1;orthogonalLoop=1;jettySize=auto;html=1;exitX=0;exitY=0.5;exitDx=0;exitDy=0;entryX=1;entryY=0.5;entryDx=0;entryDy=0;strokeColor=default;endArrow=open;endFill=0;" edge="1" parent="1" source="u2U_Ubxwq1fati4mEcYp-6" target="rjELyybHD1pyIOP6_-TY-66">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="u2U_Ubxwq1fati4mEcYp-6" value="some features can be added multiple times, such as tags" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;" vertex="1" parent="1">
+          <mxGeometry x="520" y="955" width="120" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="u2U_Ubxwq1fati4mEcYp-9" style="edgeStyle=orthogonalEdgeStyle;curved=1;orthogonalLoop=1;jettySize=auto;html=1;entryX=1;entryY=0.5;entryDx=0;entryDy=0;strokeColor=default;endArrow=open;endFill=0;" edge="1" parent="1" source="u2U_Ubxwq1fati4mEcYp-8" target="rjELyybHD1pyIOP6_-TY-17">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="u2U_Ubxwq1fati4mEcYp-8" value="place-class feature can be related to an image, showing on the map for given location (entrances, benches, notable views, etc.)" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;" vertex="1" parent="1">
+          <mxGeometry x="520" y="550" width="120" height="50" as="geometry" />
         </mxCell>
       </root>
     </mxGraphModel>
