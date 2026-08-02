@@ -43,9 +43,7 @@ Add a row when a dependency, asset, or data source is added; remove it when it g
 | `react-native-worklets` | npm | MIT | Worklets runtime peer of Reanimated |
 | `playwright` / `@playwright/test` | npm | Apache-2.0 | Web smoke tests for the Expo web target |
 | `@expo/metro-runtime` | npm | MIT | Metro runtime required for Expo web |
-| `react-native-gesture-handler` | npm | MIT | Gesture system (Expo Router / navigation peer) |
-| `react-native-reanimated` | npm | MIT | Animations (Expo Router peer) |
-| `react-native-worklets` | npm | MIT | Worklets runtime for Reanimated |
+| `@testcontainers/postgresql` | npm | MIT | Real Postgres for API permission / sync tests |
 
 Planned, pending install and licence verification: WatermelonDB, MapLibre GL JS, MapLibre React Native.
 
