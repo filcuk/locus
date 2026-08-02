@@ -1,0 +1,45 @@
+---
+description: Commit without asking, deliver work as a GitHub stacked PR, and how far to go on conflicts
+alwaysApply: true
+---
+
+# Git workflow
+
+Work here is delivered as **stacked pull requests**, and you commit without being asked. For this repository this overrides any global instruction to stop after each step or to wait for permission before committing.
+
+## Commit autonomously
+
+- Finish an agreed plan end to end. Do not pause between steps for approval.
+- One commit per logical step, one stack layer per reviewable unit. A layer nobody can review in a sitting is too big — split it.
+- Run whichever of AGENTS §6's quality gates exist before pushing a layer.
+- Autonomy is about not asking permission to *commit*. It is not permission to decide the product: a dependency, a spec change, or a DESIGN §13 open item is still a question, per the decision-making and design-docs rules.
+
+## Stacked PRs
+
+`gh stack` (the `github/gh-stack` extension) is installed and authenticated.
+
+```bash
+gh stack init                       # start a stack on the trunk
+gh stack add -Am "Auth middleware"  # stage, commit, add the next layer
+gh stack submit                     # push branches, open or refresh the linked PRs
+gh stack sync                       # fetch, rebase, push, refresh PR state
+gh stack view                       # where the stack stands
+```
+
+- Never commit or push to `main`. Every change lands on a stack branch.
+- Submit as soon as a layer is coherent, so review can start while you build the next one.
+- Merging is the maintainer's. Never run `gh stack merge` or `gh pr merge` unless explicitly asked.
+- Report the stack — PR numbers and what each layer contains — at the end of a turn.
+
+## Conflicts
+
+Resolve them yourself when the intent of both sides is clear: a rebase over renamed files, adjacent edits, an import list, a lockfile regenerated from the merged manifest.
+
+```bash
+# ❌ makes the rebase continue and silently drops the other side's work
+git checkout --ours src/routes/places.ts && git rebase --continue
+
+# ✅ keep both intents, or stop and say which two collided
+```
+
+Hand it back when both sides changed the same logic in incompatible ways, when the resolution is a product decision, or when it touches behaviour DESIGN specifies. Name the file and the two intents rather than guessing.
