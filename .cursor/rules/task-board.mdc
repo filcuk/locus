@@ -23,7 +23,7 @@ Someone glancing at the board must be able to tell what is finished, what is mov
 |---|---|
 | Backlog | Known, not scheduled |
 | Planned | Scoped and agreed, next up |
-| Ongoing | Being worked on right now |
+| Ongoing | Being worked on right now — every card an agent is actively implementing belongs here |
 | Testing | Code done, awaiting review, verification, or merge |
 | Hold | Blocked — a comment says by what, and who can unblock it |
 | Completed | Merged and verified |
@@ -41,11 +41,12 @@ Acceptance tasks are the at-a-glance proof of progress. An incomplete checklist 
 ## Keep it live
 
 - Move a card **when its state changes**, not at the end of a session. A card sitting in Ongoing that nobody is touching is a lie.
-- Nothing waits in Ongoing. Waiting on review is Testing; waiting on someone else is Hold.
+- **Start of work ⇒ Ongoing first.** The moment an agent begins implementing a card (coding, env verification, fixing CI), move it into **Ongoing** *before* that work — do not leave the card in Planned, Testing, or Hold while an agent is actively doing it. Never leave Ongoing empty while any agent is implementing; someone glancing at the board must see what is in flight.
+- Nothing *waits* in Ongoing. Waiting on review is Testing; waiting on someone else with **no** agent activity is Hold. Maintainer unblocked and an agent is verifying or installing ⇒ Ongoing, not Hold.
 - Attach the PR as a link attachment when a layer is submitted, and comment the result when a quality gate passes or fails.
 - Blocking or cancelling always carries a comment with the reason, so the board explains itself without a conversation.
 - Never delete a card to tidy the board — cancel it, so the history survives.
-- Before ending a turn, reconcile: every card you touched reflects reality, including checklist completion.
+- Before ending a turn, reconcile: every card you touched reflects reality, including checklist completion. If you started work and forgot the Ongoing move, fix it before you stop.
 
 ## When blocked on the maintainer
 
