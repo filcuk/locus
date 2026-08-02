@@ -1,7 +1,9 @@
 /**
  * Hooks into P1-F `syncStatusController` without owning indicator UI.
- * Bind the real controller when P1-F is on the tree; tests inject fakes.
+ * Defaults to the shared singleton; tests may rebind or call silenceSyncStatusHooks().
  */
+
+import { syncStatusController } from '../features/sync-status/controller.js';
 
 export type SyncStatusHooks = {
   beginSynchronize: () => void;
@@ -15,14 +17,34 @@ const noopHooks: SyncStatusHooks = {
   reportError: () => undefined,
 };
 
-let bound: SyncStatusHooks = noopHooks;
+function hooksFromController(): SyncStatusHooks {
+  return {
+    beginSynchronize: () => {
+      syncStatusController.beginSynchronize();
+    },
+    endSynchronize: (result) => {
+      syncStatusController.endSynchronize(result);
+    },
+    reportError: (message) => {
+      syncStatusController.reportError(message);
+    },
+  };
+}
+
+let bound: SyncStatusHooks = hooksFromController();
 
 /** Wire P1-F's `syncStatusController` (or a test double). */
 export function bindSyncStatusHooks(hooks: SyncStatusHooks): void {
   bound = hooks;
 }
 
+/** Restore the default P1-F singleton binding. */
 export function unbindSyncStatusHooks(): void {
+  bound = hooksFromController();
+}
+
+/** Test helper — silence status updates (no controller side effects). */
+export function silenceSyncStatusHooks(): void {
   bound = noopHooks;
 }
 

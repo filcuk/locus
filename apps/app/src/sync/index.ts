@@ -45,6 +45,7 @@ export {
 export {
   bindSyncStatusHooks,
   getSyncStatusHooks,
+  silenceSyncStatusHooks,
   unbindSyncStatusHooks,
   type SyncStatusHooks,
 } from './status.js';

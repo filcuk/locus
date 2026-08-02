@@ -4,7 +4,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import {
   bindSyncStatusHooks,
-  unbindSyncStatusHooks,
+  silenceSyncStatusHooks,
   type SyncStatusHooks,
 } from './status.js';
 import { runSynchronize } from './synchronize.js';
@@ -43,7 +43,7 @@ function fakeStatus(): SyncStatusHooks & {
 }
 
 afterEach(() => {
-  unbindSyncStatusHooks();
+  silenceSyncStatusHooks();
 });
 
 describe('runSynchronize', () => {
