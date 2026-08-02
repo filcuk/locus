@@ -355,7 +355,7 @@ Do not add external sync sidecars.
 | Navigation | **Expo Router** |
 | Local DB + sync driver | **WatermelonDB** (SQLite on native, LokiJS + IndexedDB on web) |
 | Maps | **MapLibre** — `maplibre-gl` on web, `@maplibre/maplibre-react-native` on Android |
-| Tiles | **Operator-supplied style URL + API key** (MapTiler, Stadia, or self-hosted); OSM attribution required |
+| Tiles | **OpenFreeMap public instance by default** — free, no API key; operators may substitute any style URL (MapTiler, Stadia, self-hosted); OSM attribution required |
 | Geometry | **Turf.js** (bbox, point-in-polygon, simplify) in `packages/shared` |
 | Validation | **Zod** in `packages/shared`, shared by API and client |
 | Auth | Email + password; **hand-rolled JWT** access + refresh over the `Session` table; Argon2id |
@@ -435,7 +435,7 @@ No `utils/` or `helpers/` catch-alls: a module that cannot be named after what i
 
 - **Postgres only** avoids maintaining two Drizzle schemas and two migration sets; PGlite keeps the "no external database" story for simple deployments.
 - **WatermelonDB** supplies the local store, outbox, and per-column change tracking that we would otherwise hand-roll, and its web adapter avoids the COOP/COEP headers that SQLite-WASM would force on us (those headers conflict with third-party tiles and images).
-- **Operator-supplied tiles** because the public OSM tile service does not permit application-scale use.
+- **OpenFreeMap by default** because it is free, keyless, and explicitly permits application-scale and commercial use, so a self-hoster gets a working map without signing up to anything. It is MIT-licensed and self-hostable, and its styles carry the OSM attribution automatically under MapLibre. The style URL stays configurable for operators who want MapTiler, Stadia, or their own tiles, and offline PMTiles remains the post-v1 path. The OSM Foundation's own service (`tile.openstreetmap.org`) is never an option — its usage policy forbids application-scale traffic.
 - **Notifications are a webhook we POST to, not a notifier we bundle.** Apprise is a Python library (BSD-2-Clause) and its REST wrapper `apprise-api` (MIT) is a sidecar container — either would put Python in our Node image or add a second service, both of which we have ruled out. An operator who already runs Apprise, ntfy, or anything webhook-shaped sets `NOTIFY_WEBHOOK_URL` and we post to it. Operators who set nothing get email via existing SMTP config, or nothing. Notifications are off by default and opt-in per user, since outbound calls leave the self-hosted boundary.
 - **Hand-rolled auth** because the offline model needs month-long refresh TTLs and device-bound sessions that also feed sync echo suppression. A session library would own the schema and fight both. The scope stays small — password hashing, token issue/refresh/revoke, reset — and password hashing itself uses a vetted Argon2id implementation, never a bespoke one.
 
@@ -449,7 +449,7 @@ No `utils/` or `helpers/` catch-alls: a module that cannot be named after what i
 | `SECRET_KEY` | JWT / token signing |
 | `ACCESS_TOKEN_TTL` / `REFRESH_TOKEN_TTL` | Session TTLs (refresh must tolerate long offline periods) |
 | `MEDIA_ROOT` | e.g. `/data/media` |
-| `MAP_STYLE_URL` | Tile style served to clients (may embed the operator's key) |
+| `MAP_STYLE_URL` | Tile style served to clients; unset ⇒ the OpenFreeMap public instance. May embed a key if the operator substitutes a keyed provider |
 | `CORS_ORIGINS` | Web origins for this instance |
 | `PUBLIC_BASE_URL` | Link generation |
 | `SMTP_*` | Password reset, verification, invites |
@@ -527,9 +527,9 @@ Photo gallery header, then title and **markdown** description, tag chips, visit 
 One **API** container, listening on **8000** by default. Postgres, when external, is user-supplied. No sync sidecar. Expo web is served as static assets by the API or a reverse proxy — never a second app service. The database (when PGlite) and media both persist under `/data`.
 
 ```text
-# Simple / dev: embedded PGlite, no external database
+# Simple / dev: embedded PGlite, no external database, default OpenFreeMap tiles
 docker run -p 8000:8000 -v locus-data:/data \
-  -e MEDIA_ROOT=/data/media -e MAP_STYLE_URL=... locus-api
+  -e MEDIA_ROOT=/data/media locus-api
 ```
 
 ```yaml
@@ -541,6 +541,7 @@ services:
     environment:
       DATABASE_URL: postgresql://locus:…@db:5432/locus
       MEDIA_ROOT: /data/media
+      # Optional — omit for the OpenFreeMap default
       MAP_STYLE_URL: https://api.maptiler.com/maps/…/style.json?key=…
     volumes: [locus-media:/data/media]
     ports: ["8000:8000"]
@@ -637,3 +638,4 @@ P0 also carries two de-risking spikes, both cheap now and expensive later:
 | Server database | Postgres dialect only — PGlite embedded or external Postgres; no server-side SQLite |
 | Container count | Exactly one Locus API container; optional user-supplied Postgres only |
 | Runtime | Node LTS in Docker |
+| Tiles | OpenFreeMap public instance as the default `MAP_STYLE_URL`, overridable per instance; never the OSMF tile service |

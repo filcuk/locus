@@ -19,7 +19,7 @@ Default to off, local, and opt-in. Diagnostics belong in the operator's own logs
 
 ## Coordinates are the sensitive payload
 
-- Never send coordinates, photos, or place names to a third party. The only exception is the operator's configured map tile provider, which necessarily sees viewport requests.
+- Never send coordinates, photos, or place names to a third party. The only exception is the instance's map tile provider — OpenFreeMap by default, operator-configurable — which necessarily sees viewport requests.
 - Do not put coordinates, tokens, or user emails in log lines or error messages.
 - Geocoding, search, and routing are all third-party egress — ask before wiring any of them in.
 

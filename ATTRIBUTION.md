@@ -24,7 +24,15 @@ Planned, pending install and licence verification: Hono, Drizzle ORM, PGlite, Zo
 
 Map data is © OpenStreetMap contributors, available under the [Open Database License (ODbL)](https://www.openstreetmap.org/copyright).
 
-Locus does not bundle a tile service. Each operator supplies their own style URL and provider, and is responsible for complying with that provider's terms. The app displays the OpenStreetMap attribution and the provider's required notice on every map view.
+Locus bundles no tiles. It defaults to the [OpenFreeMap](https://openfreemap.org/) public instance, which is free, needs no API key, and permits commercial use. Operators may point `MAP_STYLE_URL` at any other provider or at their own server, and are then responsible for that provider's terms.
+
+| Component | Source | Licence | Used for |
+|---|---|---|---|
+| OpenFreeMap | openfreemap.org (public instance) | MIT (project); tiles from OSM data under ODbL | Default vector basemap tiles, glyphs, and sprites |
+| OpenFreeMap styles | `hyperknot/openfreemap-styles` | BSD-3-Clause (code), CC BY 4.0 (design) | Basemap styling, forked from OpenMapTiles / OSM Bright / Positron |
+| OpenMapTiles schema | openmaptiles.org | BSD-3-Clause (code), CC BY 4.0 (design) | Vector tile schema the styles target |
+
+**Required on-screen notice:** `OpenFreeMap © OpenMapTiles Data from OpenStreetMap`. MapLibre renders this from the style's own attribution, so it appears automatically as long as we never suppress the attribution control. Any non-MapLibre surface — a static image, a printed export — must carry the string explicitly.
 
 ## Code snippets
 

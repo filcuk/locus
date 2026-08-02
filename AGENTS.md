@@ -137,7 +137,7 @@ Failure modes that have to be actively avoided. DESIGN is authoritative for why 
 - Do not add a second container to the Compose file. Postgres is the only exception, and it is user-supplied.
 - Do not bundle a notification service. We POST to an operator-supplied webhook; that is the whole feature.
 - Do not build network-first with caching bolted on afterwards, and do not make normal use depend on an always-on socket.
-- Do not point any environment at public OSM tile servers, and never hide the OSM attribution.
+- Prefer a free, keyless tile provider — OpenFreeMap is the default. Require an operator-supplied API key only when no free provider serves the need, and only where the provider's own terms permit application-scale use. `tile.openstreetmap.org` does not. Never hide the OSM attribution.
 - Do not implement breadcrumbs or GPX before P7, but keep sync and storage extensible for them.
 - Do not add OAuth or anonymous public comments in v1.
 - Do not expand into navigation, social feeds, or SaaS billing unless asked.
