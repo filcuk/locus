@@ -138,6 +138,13 @@ locus/
 6. On multi-step plans: one step, propose commit message, wait for “continue”.
 7. Next: P0 scaffold when asked to implement.
 
+### Verifying your work
+
+- Web is the automated feedback loop: run it under Playwright and use screenshots as evidence a UI change renders.
+- Android is verified by the maintainer on a dev build. No automated check here can see a MapLibre native render.
+- Passing tests is **not** the same as a working screen. State plainly what you verified and what you could not.
+- Never report a task complete on the strength of a build succeeding alone.
+
 ### Commits / PRs
 
 - Commits only when asked; message focuses on **why**.
@@ -168,19 +175,23 @@ locus/
 | MapLibre + operator-supplied tiles | **Locked** |
 | One API container | **Locked** |
 | Area / Place / Point + Collections | **Locked** |
-| Auth library (Better Auth vs hand-rolled) | **Open** (DESIGN §13) |
-| Distribution, OTA updates, monorepo tooling | **Open** (DESIGN §13) |
+| Hand-rolled JWT auth + Argon2id | **Locked** |
+| pnpm workspaces, Node LTS | **Locked** |
+| Distribution, OTA updates, polygon limits, i18n library | **Open** (DESIGN §13) |
 
 ---
 
 ## 11. Useful commands (fill in as repo grows)
 
+pnpm workspaces; no Turborepo. Commands below are the P0 target, not yet real.
+
 ```bash
-# placeholders after scaffold
 pnpm install
 pnpm --filter api dev
 pnpm --filter app start
 pnpm --filter api test
+pnpm typecheck && pnpm lint && pnpm test    # what CI gates on
+pnpm licences                               # allow-list check
 ```
 
 ---
