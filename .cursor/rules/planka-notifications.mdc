@@ -21,7 +21,7 @@ Not a background cron. In agent terms:
 ## How to handle
 
 1. Call `planka_get_notifications` (optionally filter `types`: `mentionInComment`, `commentCard`, `moveCard`, `addMemberToCard`).
-2. For each unread item: load the card with `planka_get_card` / `planka_get_comments`. Act if in scope; if a decision or clarification is needed, reply with `planka_add_comment` rather than guessing.
+2. For each unread item: load the card with `planka_get_card` / `planka_get_comments`. Act if in scope; if a decision or clarification is needed, reply with `planka_add_comment` rather than guessing — and if the reply waits on the maintainer, @mention them per `.cursor/rules/task-board.mdc` ("When blocked on the maintainer").
 3. After handling, `planka_mark_notifications_read` (`notificationId` or `markAll: true`).
 4. Obey `.cursor/rules/task-board.mdc`: list semantics, never invent labels/lists, every card keeps ≥1 existing board label.
 

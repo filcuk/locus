@@ -47,6 +47,14 @@ Acceptance tasks are the at-a-glance proof of progress. An incomplete checklist 
 - Never delete a card to tidy the board — cancel it, so the history survives.
 - Before ending a turn, reconcile: every card you touched reflects reality, including checklist completion.
 
+## When blocked on the maintainer
+
+Paused for a **decision**, **env unblock**, or **merge/review** ⇒ do not only ask in chat.
+
+1. Resolve the human maintainer with `planka_get_board_members` (not the agent/bot). On Primary that is **filcuk** (`1198847693988824065`).
+2. `planka_add_comment` on the relevant card using `@[username](userId)` — e.g. `@[filcuk](1198847693988824065)` — with the question, options, and recommendation.
+3. Leave the card in **Hold** (env/decision) or **Testing** (awaiting review/merge), with the comment stating who can unblock it.
+
 ## Labels
 
 The board already has a prepared label set (kind, priority numerals, area, version). Discover them from cards that already have tags, or via a board read path that returns label id + name — never invent names or colours.
