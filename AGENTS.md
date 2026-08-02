@@ -121,7 +121,7 @@ pnpm workspaces, no Turborepo. These commands are the P0 target and are not real
 5. On a multi-step plan: work it end to end, committing each step as you finish it. Do not wait for "continue" between steps.
 6. Deliver the work as a stacked PR, one reviewable layer per step, so review can start before the whole plan lands. Commit messages explain **why**; PRs go through `gh` and include a test plan. Merging is the maintainer's.
 7. Attempt conflict resolution yourself; hand back the ones that need a product decision.
-8. Track the work on the Planka board as you go: a card before you start, moved the moment its state changes. Check Planka notifications at turn start, after a layer, and when waiting — the maintainer may @mention on the board.
+8. Track the work on the Planka board as you go: a card before you start, moved the moment its state changes, and checklist tasks marked complete as each acceptance criterion is met (never move to Completed with an incomplete checklist). Check Planka notifications at turn start, after a layer, and when waiting — the maintainer may @mention on the board.
 9. Next up when asked to implement: the P0 scaffold.
 
 `.cursor/rules/git-workflow.mdc` is the enforced version of points 5–7, with the `gh stack` commands. `.cursor/rules/task-board.mdc` is the enforced version of point 8's board semantics; `.cursor/rules/planka-notifications.mdc` owns the notification check.

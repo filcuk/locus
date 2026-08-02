@@ -29,6 +29,15 @@ Someone glancing at the board must be able to tell what is finished, what is mov
 | Completed | Merged and verified |
 | Cancelled | Not doing it — a comment says why |
 
+## Checklist hygiene
+
+Acceptance tasks are the at-a-glance proof of progress. An incomplete checklist on a Completed card is a lie.
+
+- As each acceptance criterion is met, mark that task complete with `planka_update_task` (`isCompleted: true`). Do not wait until the card moves.
+- Before moving a card to **Completed**, every task must be checked — or remove/cancel obsolete tasks and leave a comment saying why.
+- Never move a card to Completed while its checklist is still fully (or mostly) incomplete.
+- On Planned / Ongoing / Testing / Hold, only check tasks that are verifiably done; do not mass-complete a card that is still in flight.
+
 ## Keep it live
 
 - Move a card **when its state changes**, not at the end of a session. A card sitting in Ongoing that nobody is touching is a lie.
@@ -36,7 +45,7 @@ Someone glancing at the board must be able to tell what is finished, what is mov
 - Attach the PR as a link attachment when a layer is submitted, and comment the result when a quality gate passes or fails.
 - Blocking or cancelling always carries a comment with the reason, so the board explains itself without a conversation.
 - Never delete a card to tidy the board — cancel it, so the history survives.
-- Before ending a turn, reconcile: every card you touched reflects reality.
+- Before ending a turn, reconcile: every card you touched reflects reality, including checklist completion.
 
 ## Labels
 
