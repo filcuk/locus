@@ -639,3 +639,4 @@ P0 also carries two de-risking spikes, both cheap now and expensive later:
 | Container count | Exactly one Locus API container; optional user-supplied Postgres only |
 | Runtime | Node LTS in Docker |
 | Tiles | OpenFreeMap public instance as the default `MAP_STYLE_URL`, overridable per instance; never the OSMF tile service |
+| Licence allow-list tooling licences | `Python-2.0` and `BlueOak-1.0.0` are on the allow-list (transitive ESLint tree: `argparse`, `minimatch`); the gate still covers the full install tree |

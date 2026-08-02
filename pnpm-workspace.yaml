@@ -2,10 +2,10 @@ packages:
   - apps/*
   - packages/*
 
-allowBuilds:
-  esbuild: set this to true or false
-
-# pnpm blocks dependency build scripts unless they are named here. esbuild's
+# pnpm blocks dependency build scripts unless allowed here. esbuild's
 # postinstall only unpacks its platform binary, which Vitest needs to run.
+allowBuilds:
+  esbuild: true
+
 onlyBuiltDependencies:
   - esbuild

@@ -17,6 +17,8 @@ const ALLOWED = new Set([
   'Unlicense',
   'CC0-1.0',
   'Zlib',
+  'Python-2.0',
+  'BlueOak-1.0.0',
 ]);
 
 /**
