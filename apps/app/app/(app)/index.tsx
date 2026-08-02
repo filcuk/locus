@@ -1,14 +1,13 @@
 import { StyleSheet, Text, View } from 'react-native';
 
 import { t } from '@/i18n';
+import { MapView } from '@/map';
 
-/** Home — map + hierarchical entry list (DESIGN §8). Stubs until later layers. */
+/** Home — map + hierarchical entry list (DESIGN §8). */
 export default function HomeScreen() {
   return (
     <View style={styles.root}>
-      <View style={styles.mapPlaceholder} accessibilityLabel={t('home.stubMap')}>
-        <Text style={styles.mapLabel}>{t('home.stubMap')}</Text>
-      </View>
+      <MapView style={styles.map} />
       <View style={styles.list}>
         <Text style={styles.title}>{t('home.title')}</Text>
         <Text style={styles.tab}>{t('home.entriesTab')}</Text>
@@ -23,16 +22,8 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#f4f4f5',
   },
-  mapPlaceholder: {
-    height: 200,
-    backgroundColor: '#d4d4d8',
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: 16,
-  },
-  mapLabel: {
-    color: '#3f3f46',
-    textAlign: 'center',
+  map: {
+    height: 220,
   },
   list: {
     flex: 1,

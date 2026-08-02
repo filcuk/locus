@@ -49,8 +49,8 @@ Add a row when a dependency, asset, or data source is added; remove it when it g
 | `@nozbe/lokijs` | npm (via WatermelonDB) | MIT | Web adapter persistence for WatermelonDB |
 | `@babel/plugin-proposal-decorators` | npm | MIT | Legacy decorators for WatermelonDB models |
 | `@babel/plugin-proposal-class-properties` | npm | MIT | Class fields companion for WatermelonDB decorators |
-
-Planned, pending install and licence verification: MapLibre GL JS, MapLibre React Native.
+| `maplibre-gl` | npm | BSD-3-Clause | MapLibre GL JS — web map renderer |
+| `@maplibre/maplibre-react-native` | npm | MIT | MapLibre React Native — Android map renderer |
 
 ## Assets
 

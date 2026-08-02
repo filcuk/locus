@@ -21,13 +21,11 @@ export const catalogue = {
   'home.entriesTab': 'Entries',
   'home.collectionsTab': 'Collections',
   'home.empty': 'No entries yet.',
-  'home.stubMap': 'Map placeholder — MapLibre lands in a later layer.',
 
   'collections.title': 'Collections',
   'collections.empty': 'No collections yet.',
 
   'map.title': 'Map',
-  'map.stub': 'Full-screen map — MapLibre lands in a later layer.',
 
   'new.title': 'New entry',
   'new.stub': 'Type and parent picker arrives in P1.',
