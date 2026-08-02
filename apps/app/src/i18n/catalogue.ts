@@ -21,6 +21,12 @@ export const catalogue = {
   'home.entriesTab': 'Entries',
   'home.collectionsTab': 'Collections',
   'home.empty': 'No entries yet.',
+  'home.add': 'Add entry',
+  'home.youAreHere': 'You are here',
+  'home.distance.here': 'here',
+  'home.kind.area': 'Area',
+  'home.kind.place': 'Place',
+  'home.kind.point': 'Point',
 
   'collections.title': 'Collections',
   'collections.empty': 'No collections yet.',
