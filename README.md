@@ -8,6 +8,7 @@ Offline-first app for areas, places, and points (POIs)—with collections, notes
 
 - [DESIGN.md](./DESIGN.md) — product and architecture
 - [AGENTS.md](./AGENTS.md) — contributor / agent guidance
+- [DEVELOPMENT.md](./DEVELOPMENT.md) — local API, Expo web, and Android dev-build runbook
 
 ## Status
 

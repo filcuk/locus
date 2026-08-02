@@ -583,8 +583,8 @@ Conventions are only real once something enforces them. **P0 is not done until C
 
 P0 also carries two de-risking spikes, both cheap now and expensive later:
 
-- **WatermelonDB schema shape.** Its columns are limited to string, number, and boolean with no foreign-key constraints, so `geom_geojson` is a serialised string and containment is enforced in application code. Confirm the client schema against [§4](#4-domain-model) before P2 builds areas on top of it.
-- **Cursor semantics.** WatermelonDB types `lastPulledAt` as a timestamp while we return a `server_seq` watermark. Prove the round-trip holds before P1.
+- **WatermelonDB schema shape.** Its columns are limited to string, number, and boolean with no foreign-key constraints, so `geom_geojson` is a serialised string and containment is enforced in application code. Confirm the client schema against [§4](#4-domain-model) before P2 builds areas on top of it. **Proven in P0** (`apps/app` schema + `schema-shape` tests): GeoJSON is a string column; containment stays in application code.
+- **Cursor semantics.** WatermelonDB types `lastPulledAt` as a timestamp while we return a `server_seq` watermark. Prove the round-trip holds before P1. **Proven in P0** (`packages/shared` sync HTTP helpers + `apps/app/src/sync` binding + API Testcontainers round-trip): `timestamp` is stored and replayed as the numeric cursor; incremental pull at that watermark is empty. Full WatermelonDB `synchronize()` local apply/merge remains a later wiring step.
 
 ---
 
@@ -641,3 +641,4 @@ P0 also carries two de-risking spikes, both cheap now and expensive later:
 | Tiles | OpenFreeMap public instance as the default `MAP_STYLE_URL`, overridable per instance; never the OSMF tile service |
 | Licence allow-list tooling licences | `Python-2.0` and `BlueOak-1.0.0` are on the allow-list (transitive ESLint tree: `argparse`, `minimatch`); the gate still covers the full install tree |
 | Licence allow-list Expo transitive licences | `0BSD`, `CC-BY-4.0`, and `MPL-2.0` are on the allow-list (Expo/Metro tree: `tslib`, `jsc-safe-url`, `caniuse-lite`, `lightningcss`); the gate still covers the full install tree |
+| Sync `timestamp` / cursor | Pull/push `timestamp` is the fully-committed `server_seq` watermark; the client stores it in WatermelonDB's `lastPulledAt` field without converting to wall time |
