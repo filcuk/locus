@@ -1,18 +1,80 @@
-import { StyleSheet, Text, View } from 'react-native';
+import { Link, useFocusEffect } from 'expo-router';
+import { useCallback, useState } from 'react';
+import {
+  Pressable,
+  RefreshControl,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View,
+} from 'react-native';
 
+import {
+  HomeEntryList,
+  useHomeHierarchy,
+  useOneShotLocation,
+} from '@/features/home';
 import { t } from '@/i18n';
 import { MapView } from '@/map';
 
 /** Home — map + hierarchical entry list (DESIGN §8). */
 export default function HomeScreen() {
+  const { fix, refresh: refreshFix } = useOneShotLocation();
+  const { roots, loading } = useHomeHierarchy(fix);
+  const [refreshing, setRefreshing] = useState(false);
+
+  const recompute = useCallback(async () => {
+    await refreshFix();
+  }, [refreshFix]);
+
+  useFocusEffect(
+    useCallback(() => {
+      void recompute();
+    }, [recompute]),
+  );
+
+  const onRefresh = useCallback(async () => {
+    setRefreshing(true);
+    try {
+      await recompute();
+    } finally {
+      setRefreshing(false);
+    }
+  }, [recompute]);
+
   return (
-    <View style={styles.root}>
+    <View style={styles.root} testID="home-screen">
       <MapView style={styles.map} />
-      <View style={styles.list}>
-        <Text style={styles.title}>{t('home.title')}</Text>
-        <Text style={styles.tab}>{t('home.entriesTab')}</Text>
-        <Text style={styles.empty}>{t('home.empty')}</Text>
-      </View>
+      <ScrollView
+        style={styles.scroll}
+        contentContainerStyle={styles.scrollContent}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={() => void onRefresh()} />
+        }
+      >
+        <View style={styles.header}>
+          <Text style={styles.title}>{t('home.title')}</Text>
+          <View style={styles.tabs}>
+            <Text style={[styles.tab, styles.tabActive]}>{t('home.entriesTab')}</Text>
+            <Link href="/collections" asChild>
+              <Pressable accessibilityRole="link">
+                <Text style={styles.tab}>{t('home.collectionsTab')}</Text>
+              </Pressable>
+            </Link>
+          </View>
+        </View>
+        <HomeEntryList roots={roots} loading={loading} />
+      </ScrollView>
+      <Link href="/new" asChild>
+        <Pressable
+          style={styles.fab}
+          accessibilityRole="button"
+          accessibilityLabel={t('home.add')}
+          testID="home-fab"
+        >
+          <Text style={styles.fabLabel}>+</Text>
+        </Pressable>
+      </Link>
     </View>
   );
 }
@@ -25,24 +87,53 @@ const styles = StyleSheet.create({
   map: {
     height: 220,
   },
-  list: {
+  scroll: {
     flex: 1,
-    padding: 16,
+  },
+  scrollContent: {
+    paddingHorizontal: 16,
+    paddingBottom: 88,
     gap: 8,
+  },
+  header: {
+    gap: 8,
+    paddingTop: 16,
   },
   title: {
     fontSize: 20,
     fontWeight: '600',
     color: '#18181b',
   },
+  tabs: {
+    flexDirection: 'row',
+    gap: 16,
+  },
   tab: {
     fontSize: 14,
     fontWeight: '500',
-    color: '#52525b',
-  },
-  empty: {
-    fontSize: 16,
     color: '#71717a',
-    marginTop: 8,
+    paddingBottom: 4,
+  },
+  tabActive: {
+    color: '#18181b',
+    borderBottomWidth: 2,
+    borderBottomColor: '#18181b',
+  },
+  fab: {
+    position: 'absolute',
+    right: 20,
+    bottom: 24,
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: '#18181b',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  fabLabel: {
+    color: '#fafafa',
+    fontSize: 28,
+    lineHeight: 32,
+    fontWeight: '400',
   },
 });
