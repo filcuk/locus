@@ -5,7 +5,7 @@ alwaysApply: true
 
 # Task board
 
-Work is tracked on the Planka board **Primary** (`1832888170790782370`) in the 🪷 Locus project, via the `user-planka` MCP server. Resolve list IDs with `planka_get_structure`.
+Work is tracked on the Planka board **Primary** (`1832888170790782370`) in the 🪷 Locus project, via the `user-planka` MCP server. Resolve list IDs with `planka_get_structure`. Maintainer @mentions and unread inbox items: see `planka-notifications.mdc`.
 
 Someone glancing at the board must be able to tell what is finished, what is moving, and what is stuck, without asking anyone. That only holds if the board is updated as work happens.
 

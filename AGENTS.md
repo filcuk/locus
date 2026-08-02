@@ -12,7 +12,7 @@ How to work in this repository: conventions, workflow, quality gates, and verifi
 |----------|------|-----------------|
 | `DESIGN.md` | Product rules, domain model, ACL, sync protocol, stack choices and their rationale, phases, risks, settled decisions | Conventions, commands, workflow |
 | `AGENTS.md` | This file — repo conventions, code organisation, CI gates, verification, agent workflow | Anything that decides *what* we build |
-| `.cursor/rules/` | Enforced guardrails, one concern per file: doc structure, design adherence, decisions, git workflow, task board, security, privacy, licensing, attribution, assets, code quality, testing, i18n, API/data, offline-first client, native dependencies | Long-form specification |
+| `.cursor/rules/` | Enforced guardrails, one concern per file: doc structure, design adherence, decisions, git workflow, task board, Planka notifications, security, privacy, licensing, attribution, assets, code quality, testing, i18n, API/data, offline-first client, native dependencies | Long-form specification |
 | `ATTRIBUTION.md` | Every third-party library, asset, and data source we ship | — |
 | `README.md` | Short human-facing intro | Deep guidance — that belongs here or in DESIGN |
 
@@ -121,10 +121,10 @@ pnpm workspaces, no Turborepo. These commands are the P0 target and are not real
 5. On a multi-step plan: work it end to end, committing each step as you finish it. Do not wait for "continue" between steps.
 6. Deliver the work as a stacked PR, one reviewable layer per step, so review can start before the whole plan lands. Commit messages explain **why**; PRs go through `gh` and include a test plan. Merging is the maintainer's.
 7. Attempt conflict resolution yourself; hand back the ones that need a product decision.
-8. Track the work on the Planka board as you go: a card before you start, moved the moment its state changes.
+8. Track the work on the Planka board as you go: a card before you start, moved the moment its state changes. Check Planka notifications at turn start, after a layer, and when waiting — the maintainer may @mention on the board.
 9. Next up when asked to implement: the P0 scaffold.
 
-`.cursor/rules/git-workflow.mdc` is the enforced version of points 5–7, with the `gh stack` commands. `.cursor/rules/task-board.mdc` is the enforced version of point 8, with the board's list semantics.
+`.cursor/rules/git-workflow.mdc` is the enforced version of points 5–7, with the `gh stack` commands. `.cursor/rules/task-board.mdc` is the enforced version of point 8's board semantics; `.cursor/rules/planka-notifications.mdc` owns the notification check.
 
 ---
 
