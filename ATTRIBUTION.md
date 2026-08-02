@@ -44,8 +44,13 @@ Add a row when a dependency, asset, or data source is added; remove it when it g
 | `playwright` / `@playwright/test` | npm | Apache-2.0 | Web smoke tests for the Expo web target |
 | `@expo/metro-runtime` | npm | MIT | Metro runtime required for Expo web |
 | `@testcontainers/postgresql` | npm | MIT | Real Postgres for API permission / sync tests |
+| `@nozbe/watermelondb` | npm | MIT | Local DB + sync driver (SQLite native / LokiJS web) |
+| `@nozbe/sqlite` | npm (via WatermelonDB) | blessing (SQLite public domain) | Native SQLite amalgamation mirror for WatermelonDB |
+| `@nozbe/lokijs` | npm (via WatermelonDB) | MIT | Web adapter persistence for WatermelonDB |
+| `@babel/plugin-proposal-decorators` | npm | MIT | Legacy decorators for WatermelonDB models |
+| `@babel/plugin-proposal-class-properties` | npm | MIT | Class fields companion for WatermelonDB decorators |
 
-Planned, pending install and licence verification: WatermelonDB, MapLibre GL JS, MapLibre React Native.
+Planned, pending install and licence verification: MapLibre GL JS, MapLibre React Native.
 
 ## Assets
 

@@ -22,6 +22,17 @@ const ALLOWED = new Set([
   '0BSD',
   'CC-BY-4.0',
   'MPL-2.0',
+  // SQLite blessing — public-domain dedication; see https://www.sqlite.org/copyright.html
+  'blessing',
+]);
+
+/**
+ * Packages whose npm metadata omits a licence but whose upstream licence we verified
+ * and the maintainer approved (do not grow this without an explicit allow).
+ */
+const PACKAGE_LICENCE_OVERRIDES = new Map([
+  // WatermelonDB ships a SQLite amalgamation mirror with no package.json licence field.
+  ['@nozbe/sqlite', 'blessing'],
 ]);
 
 /**
@@ -62,8 +73,9 @@ const byLicence = readInstalledLicences();
 const offenders = [];
 
 for (const [licence, packages] of Object.entries(byLicence)) {
-  if (isAllowed(licence)) continue;
   for (const pkg of packages) {
+    const effective = PACKAGE_LICENCE_OVERRIDES.get(pkg.name) ?? licence;
+    if (isAllowed(effective)) continue;
     offenders.push({ name: pkg.name, versions: pkg.versions?.join(', ') ?? '', licence });
   }
 }
