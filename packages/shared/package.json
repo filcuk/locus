@@ -9,9 +9,18 @@
   },
   "scripts": {
     "typecheck": "tsc --noEmit -p tsconfig.json",
-    "test": "vitest run --passWithNoTests"
+    "test": "vitest run"
   },
   "devDependencies": {
     "vitest": "^3.2.4"
+  },
+  "dependencies": {
+    "@turf/bbox": "6.5.0",
+    "@turf/boolean-point-in-polygon": "6.5.0",
+    "@turf/distance": "6.5.0",
+    "@turf/helpers": "6.5.0",
+    "@turf/simplify": "6.5.0",
+    "uuid": "^14.0.1",
+    "zod": "^4.4.3"
   }
 }

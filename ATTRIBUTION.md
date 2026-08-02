@@ -12,8 +12,15 @@ Add a row when a dependency, asset, or data source is added; remove it when it g
 | `eslint` | npm | MIT | The lint gate |
 | `typescript-eslint` | npm | MIT | TypeScript parser and rules for ESLint |
 | `vitest` | npm | MIT | Test runner |
+| `zod` | npm | MIT | Shared entity and sync wire schemas in `@locus/shared` |
+| `uuid` | npm | MIT | Client-generated UUIDv7 primary keys |
+| `@turf/bbox` | npm | MIT | Derived area bounding boxes |
+| `@turf/boolean-point-in-polygon` | npm | MIT | Geometric containment checks |
+| `@turf/simplify` | npm | MIT | Douglas–Peucker ring simplification |
+| `@turf/distance` | npm | MIT | Shared metre distances for ordering/filters |
+| `@turf/helpers` | npm | MIT | GeoJSON helpers used by the Turf wrappers |
 
-Planned, pending install and licence verification: Hono, Drizzle ORM, PGlite, Zod, Expo / Expo Router, React Native, WatermelonDB, MapLibre GL JS, MapLibre React Native, Turf.js.
+Planned, pending install and licence verification: Hono, Drizzle ORM, PGlite, Expo / Expo Router, React Native, WatermelonDB, MapLibre GL JS, MapLibre React Native.
 
 ## Assets
 
