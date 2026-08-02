@@ -12,7 +12,7 @@ How to work in this repository: conventions, workflow, quality gates, and verifi
 |----------|------|-----------------|
 | `DESIGN.md` | Product rules, domain model, ACL, sync protocol, stack choices and their rationale, phases, risks, settled decisions | Conventions, commands, workflow |
 | `AGENTS.md` | This file — repo conventions, code organisation, CI gates, verification, agent workflow | Anything that decides *what* we build |
-| `.cursor/rules/` | Enforced guardrails, one concern per file: doc structure, design adherence, decisions, git workflow, task board, Planka notifications, security, privacy, licensing, attribution, assets, code quality, testing, i18n, API/data, offline-first client, native dependencies | Long-form specification |
+| `.cursor/rules/` | Enforced guardrails, one concern per file: doc structure, design adherence, decisions, git workflow, task board, Planka notifications, security, privacy, licensing, attribution, assets, code quality, testing, i18n, API/data, offline-first client, native dependencies, [paths](.cursor/rules/paths.mdc) (workspace-relative tool/doc paths) | Long-form specification |
 | `ATTRIBUTION.md` | Every third-party library, asset, and data source we ship | — |
 | `README.md` | Short human-facing intro | Deep guidance — that belongs here or in DESIGN |
 

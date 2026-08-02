@@ -1,0 +1,43 @@
+---
+description: Prefer workspace-relative paths in tool calls and docs to avoid Cursor Auto-review blocks
+alwaysApply: true
+---
+
+# Workspace-relative paths
+
+Absolute filesystem paths under this repo (`C:\Users\…\locus\…`, `/Users/…/locus/…`) trigger Cursor Auto-review / safety blocks. Prefer paths **relative to the workspace root**.
+
+## Prefer relative
+
+Use workspace-relative paths for:
+
+- Tool args: Read, Write, StrReplace, Delete, Grep `path`, Glob `target_directory`
+- Shell `working_directory` / `cwd`, and paths passed to git, gh, pnpm, editors
+- Docs, comments, commit messages, and Planka attachment or comment text that names repo files
+
+```text
+# ❌ absolute — often blocked
+C:\Users\fifak\Documents\GitHub\locus\.cursor\rules\task-board.mdc
+
+# ✅ relative to workspace root
+.cursor/rules/task-board.mdc
+apps/api
+packages/shared
+AGENTS.md
+```
+
+Forward slashes are fine on Windows in these tools.
+
+## Exceptions (absolute only when required)
+
+Use an absolute path only when the target is **outside** this workspace, for example:
+
+- Global Cursor skills under `~/.cursor/skills-cursor` (or the OS equivalent)
+- Temp files for `git commit -F` under `$env:TEMP` / `/tmp`
+- Another git worktree when intentionally operating there — prefer `git -C <relative-or-worktree-path>` when a path relative to the current repo still works
+
+Do not expand the workspace root into an absolute path "for clarity."
+
+## Subagents
+
+When prompting a Task / subagent, instruct it the same way: workspace-relative paths in tool args and written output; absolute only for out-of-repo exceptions above.
