@@ -6,11 +6,12 @@ Add a row when a dependency, asset, or data source is added; remove it when it g
 
 ## Libraries
 
-Nothing is installed yet. The planned stack is listed below and each entry must be confirmed (and this table completed) when the dependency is actually added.
-
 | Component | Source | Licence | Used for |
 |---|---|---|---|
-| _(none yet)_ | | | |
+| `typescript` | npm | Apache-2.0 | Type system; the `tsc --noEmit` typecheck gate |
+| `eslint` | npm | MIT | The lint gate |
+| `typescript-eslint` | npm | MIT | TypeScript parser and rules for ESLint |
+| `vitest` | npm | MIT | Test runner |
 
 Planned, pending install and licence verification: Hono, Drizzle ORM, PGlite, Zod, Expo / Expo Router, React Native, WatermelonDB, MapLibre GL JS, MapLibre React Native, Turf.js.
 
