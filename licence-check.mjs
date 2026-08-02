@@ -19,6 +19,9 @@ const ALLOWED = new Set([
   'Zlib',
   'Python-2.0',
   'BlueOak-1.0.0',
+  '0BSD',
+  'CC-BY-4.0',
+  'MPL-2.0',
 ]);
 
 /**
