@@ -11,6 +11,7 @@ Each fact lives in exactly one document. Authority and design-change process are
 |----------|------|
 | `DESIGN.md` | *What* we build and *what was decided*: product rules, domain model, ACL, sync protocol, stack choices with rationale, phases, risks, settled decisions |
 | `AGENTS.md` | *How to work here*: repo layout, code conventions, CI gates, commands, verification, agent workflow |
+| `DEVELOPMENT.md` | Human-facing local run and Android/web **dev-build** instructions (maintainer machine) |
 | `.cursor/rules/*.mdc` | Enforced guardrails, one concern per file, kept short |
 | `ATTRIBUTION.md` | Third-party libraries, assets, and data sources we ship |
 | `README.md` | Short human-facing intro only |
