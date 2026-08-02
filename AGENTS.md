@@ -125,7 +125,7 @@ pnpm workspaces, no Turborepo. CI (`.github/workflows/ci.yml`) runs `typecheck`,
 8. Track the work on the Planka board as you go: a card before you start, moved the moment its state changes, and checklist tasks marked complete as each acceptance criterion is met (never move to Completed with an incomplete checklist). Check Planka notifications at turn start, after a layer, and when waiting — the maintainer may @mention on the board.
 9. Next up when asked to implement: the P0 scaffold.
 
-`.cursor/rules/git-workflow.mdc` is the enforced version of points 5–7, with the `gh stack` commands. `.cursor/rules/task-board.mdc` is the enforced version of point 8's board semantics; `.cursor/rules/planka-notifications.mdc` owns the notification check.
+`.cursor/rules/git-workflow.mdc` is the enforced version of points 5–7, with the `gh stack` commands and the Bugbot ban. `.cursor/rules/task-board.mdc` is the enforced version of point 8's board semantics; `.cursor/rules/planka-notifications.mdc` owns the notification check.
 
 ---
 
