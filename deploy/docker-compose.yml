@@ -1,0 +1,31 @@
+# Simple / dev: embedded PGlite, no external database, default OpenFreeMap tiles.
+# DESIGN §9 — one API container; data + media under /data.
+services:
+  api:
+    build:
+      context: ..
+      dockerfile: apps/api/Dockerfile
+    image: locus-api:latest
+    ports:
+      - "8000:8000"
+    environment:
+      SECRET_KEY: ${SECRET_KEY:-change-me-in-production}
+      MEDIA_ROOT: /data/media
+      ACCESS_TOKEN_TTL: ${ACCESS_TOKEN_TTL:-15m}
+      REFRESH_TOKEN_TTL: ${REFRESH_TOKEN_TTL:-720h}
+      PUBLIC_BASE_URL: ${PUBLIC_BASE_URL:-http://localhost:8000}
+      CORS_ORIGINS: ${CORS_ORIGINS:-*}
+      # Omit MAP_STYLE_URL to use the OpenFreeMap default baked into env.ts
+      MAP_STYLE_URL: ${MAP_STYLE_URL:-}
+      SMTP_HOST: ${SMTP_HOST:-}
+      SMTP_PORT: ${SMTP_PORT:-}
+      SMTP_USER: ${SMTP_USER:-}
+      SMTP_PASSWORD: ${SMTP_PASSWORD:-}
+      SMTP_FROM: ${SMTP_FROM:-}
+      NOTIFY_WEBHOOK_URL: ${NOTIFY_WEBHOOK_URL:-}
+    volumes:
+      - locus-data:/data
+    restart: unless-stopped
+
+volumes:
+  locus-data:
