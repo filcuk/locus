@@ -13,6 +13,7 @@ Someone glancing at the board must be able to tell what is finished, what is mov
 
 - Create the card **before** starting: features, bugs, refactors, doc changes, chores, and decisions that need implementing.
 - One card per reviewable unit, matching one stack layer — see the git-workflow rule.
+- Apply **at least one existing board label** when the card is created (kind, area, priority, and/or version as they fit). No card ships untagged.
 - Add tasks (checklist items) when a card has more than one verifiable outcome. Each task is something you can tick off.
 - Work discovered mid-task becomes a new Backlog card. Do not quietly widen the card you are on.
 
@@ -37,6 +38,14 @@ Someone glancing at the board must be able to tell what is finished, what is mov
 - Never delete a card to tidy the board — cancel it, so the history survives.
 - Before ending a turn, reconcile: every card you touched reflects reality.
 
+## Labels
+
+The board already has a prepared label set (kind, priority numerals, area, version). Discover them from cards that already have tags, or via a board read path that returns label id + name — never invent names or colours.
+
+- Every new card gets **at least one** existing label via `planka_add_card_labels` at create time.
+- Map the card's purpose onto those names (e.g. feature/api/ci/cd/deps/decision/Ⅰ). Prefer the pattern used by neighbouring cards.
+- Do **not** create, rename, or delete labels. If none fit, ask — do not improvise a new taxonomy.
+
 ## Ask first
 
-Use the labels the board already has. Do not invent a label taxonomy, rename or add lists, or restructure the board without asking.
+Do not invent a label taxonomy, rename or add lists, or restructure the board without asking.
