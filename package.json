@@ -1,0 +1,22 @@
+{
+  "name": "locus",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "license": "Apache-2.0",
+  "packageManager": "pnpm@11.18.0",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "typecheck": "pnpm --recursive --if-present run typecheck",
+    "lint": "eslint .",
+    "test": "pnpm --recursive --if-present run test",
+    "licences": "node licence-check.mjs"
+  },
+  "devDependencies": {
+    "eslint": "^9.39.1",
+    "typescript": "^5.9.3",
+    "typescript-eslint": "^8.46.2"
+  }
+}
