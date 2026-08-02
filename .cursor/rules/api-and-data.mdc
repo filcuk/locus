@@ -1,0 +1,39 @@
+---
+description: Hono API, Drizzle schema, and migration safety conventions
+globs: apps/api/**
+alwaysApply: false
+---
+
+# API and data
+
+## Routes
+
+- Validate with Zod schemas from `packages/shared`; never hand-parse a body.
+- Authorize with `can()` before touching data.
+- Domain writes and sync apply share one code path, so `ChangeLog` stays consistent. Never write a domain table without emitting its change.
+- Sync apply must be idempotent — replaying the same push changes nothing.
+
+## Drizzle
+
+- Postgres dialect only (`pg-core`). Do not add a second dialect or a server-side SQLite path.
+- The schema file is the source of truth; generate migrations with drizzle-kit and never hand-edit one that has already shipped.
+
+## Migrations must not destroy user data
+
+Self-hosters run these unattended, so a bad migration is unrecoverable data loss.
+
+- Additive by default: add a nullable column, backfill, then tighten in a later release.
+- Never drop or rename a column or table, and never change a type destructively, in a single shipped migration. Deprecate first, remove once no client writes it.
+- Deletes are soft (`deleted_at`) because tombstones drive sync.
+
+```sql
+-- ❌ silently loses data on every existing instance
+ALTER TABLE points DROP COLUMN description;
+
+-- ✅ deprecate now, remove in a later release
+ALTER TABLE points ALTER COLUMN description DROP NOT NULL;
+```
+
+## Operational
+
+Migrations run at startup behind a lock. The API stays a single container with in-process WebSocket fan-out — do not add code that assumes multiple replicas.

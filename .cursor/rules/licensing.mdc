@@ -1,0 +1,31 @@
+---
+description: Apache-2.0 licence compatibility rules for dependencies, assets, and data
+alwaysApply: true
+---
+
+# Licensing
+
+Locus ships under the **Apache License 2.0**. Everything we bundle, distribute, or depend on must be compatible with that and free to use for self-hosted, commercial-capable deployment.
+
+## Compatible (still needs approval to add, see decision-making)
+
+MIT, BSD-2-Clause, BSD-3-Clause, Apache-2.0, ISC, Unlicense, CC0, Zlib.
+
+## Flag to the user before going further
+
+- **Copyleft:** GPL, AGPL, LGPL, MPL, SSPL, or any "source-available" / BSL licence.
+- Anything requiring a paid tier, API key quota, or account for features we plan to use.
+- **Share-alike content and data:** CC BY-SA, and ODbL (this includes OpenStreetMap *data*).
+- Any package whose LICENSE file you cannot locate.
+- Licence changes discovered during a version bump.
+
+GPL/AGPL is incompatible with our distribution. LGPL and MPL are a user decision, not a judgement call for you.
+
+## Before adding any dependency
+
+1. Read the licence in the package's own LICENSE file — not an npm badge or a blog post.
+2. Confirm it is free for our use, with no runtime licence key.
+3. Get explicit user approval.
+4. Add the row to `ATTRIBUTION.md` in the same change.
+
+Removing a dependency? Remove its attribution row too.

@@ -1,0 +1,28 @@
+---
+description: No telemetry or third-party data egress from a self-hosted location app
+alwaysApply: true
+---
+
+# Privacy and telemetry
+
+Locus is self-hosted so that a person's location history stays on their own server. Any byte that leaves that server breaks the product's core promise.
+
+## Never add without explicit approval
+
+- Analytics, product metrics, session replay, or usage pings of any kind.
+- Crash and error reporting that transmits off-instance (Sentry, Bugsnag, Crashlytics).
+- Update checks, licence checks, or "phone home" calls to any domain we control.
+- Fonts, scripts, or images loaded from a CDN at runtime — bundle them instead.
+- SDKs that collect device identifiers or advertising IDs as a side effect.
+
+Default to off, local, and opt-in. Diagnostics belong in the operator's own logs.
+
+## Coordinates are the sensitive payload
+
+- Never send coordinates, photos, or place names to a third party. The only exception is the instance's map tile provider — OpenFreeMap by default, operator-configurable — which necessarily sees viewport requests.
+- Do not put coordinates, tokens, or user emails in log lines or error messages.
+- Geocoding, search, and routing are all third-party egress — ask before wiring any of them in.
+
+## Permissions
+
+Request a device permission at the moment it is used, with a reason, and only the narrowest scope. Foreground location only in v1; background location is a later phase and a distribution decision, not an implementation detail.

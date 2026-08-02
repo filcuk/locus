@@ -1,0 +1,35 @@
+---
+description: Offline-first and instant-UI invariants for the Expo client
+globs: apps/app/**
+alwaysApply: false
+---
+
+# Offline-first client
+
+The local WatermelonDB store is the only thing the UI reads or writes. Sync is a background side effect. See `DESIGN.md` §5.
+
+## Invariants
+
+- Components never call `fetch`, and never `await` the network before showing a result.
+- Writes commit locally first; the sync driver drains them later.
+- Every user-created record gets a client-generated UUID — never wait for a server id.
+- A 401 or a failed sync must never clear local data, log the user out silently, or block the UI.
+- Anything slower than ~150 ms shows a pending state; nothing freezes an interaction.
+
+```tsx
+// ❌ network on the interaction path; the feature simply breaks offline
+const onSave = async () => { const saved = await api.createPoint(p); setPoint(saved); };
+
+// ✅ local write, instant UI, sync happens later
+const onSave = () => database.write(() => points.create(p));
+```
+
+## Cross-platform
+
+- Android and web differ for maps and storage; split with `*.native.tsx` / `*.web.tsx` rather than runtime `Platform.OS` branches inside a component.
+- The app requires a development build — never add code paths that assume Expo Go.
+- Verify a change on **both** Android and web before calling it done; MapLibre's two implementations do not share an API.
+
+## Sync changes
+
+Any change to sync behaviour must still satisfy every item under "hard parts that must be handled explicitly" in `DESIGN.md` §5 — idempotent replay, echo suppression, and no head-of-line blocking of the queue.

@@ -1,0 +1,44 @@
+---
+description: Which project document owns which content; never duplicate a fact across docs
+alwaysApply: true
+---
+
+# Documentation structure
+
+Each fact lives in exactly one document. Authority and design-change process are covered by the design-docs rule; this rule is only about **where content goes**.
+
+| Document | Owns |
+|----------|------|
+| `DESIGN.md` | *What* we build and *what was decided*: product rules, domain model, ACL, sync protocol, stack choices with rationale, phases, risks, settled decisions |
+| `AGENTS.md` | *How to work here*: repo layout, code conventions, CI gates, commands, verification, agent workflow |
+| `.cursor/rules/*.mdc` | Enforced guardrails, one concern per file, kept short |
+| `ATTRIBUTION.md` | Third-party libraries, assets, and data sources we ship |
+| `README.md` | Short human-facing intro only |
+
+## Deciding where something goes
+
+Ask whether it would change if the team switched tools tomorrow but built the same product.
+
+- "A point may belong to a place **or** an area, never both" ⇒ product truth ⇒ `DESIGN.md`.
+- "Validate request bodies with the Zod schema from `packages/shared`" ⇒ working convention ⇒ `AGENTS.md`.
+- "Postgres only — PGlite or external" ⇒ a decision with a rationale ⇒ `DESIGN.md`; `AGENTS.md` may state the resulting prohibition ("no second Drizzle dialect") without restating the reasoning.
+
+## Never duplicate — link instead
+
+```md
+<!-- ❌ AGENTS.md restating a spec table; it will drift and no one will know which is current -->
+Sync modes: offline, power-saving (no socket), live (WebSocket hints).
+
+<!-- ✅ point at the owner -->
+Sync modes and the wire contract are specified in DESIGN §5.
+```
+
+Cross-reference by **section number and heading** (`DESIGN §4 — Domain model`) or by anchor, and check the target still says what you claim.
+
+## When editing
+
+- Moving content between docs is not a design change; **rewording a decision is**. Move text; do not "improve" it in transit.
+- Adding a decision ⇒ `DESIGN.md`, in the same change that implements it.
+- Adding a convention or a CI gate ⇒ `AGENTS.md`, in the same change.
+- Found the same fact in two docs? Delete the copy in the non-owning document and link to the owner. Say so in your summary.
+- Keep `DESIGN.md` section numbers stable; the rules and `AGENTS.md` reference them by number.

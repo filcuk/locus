@@ -1,0 +1,25 @@
+---
+description: Keep ATTRIBUTION.md accurate for third-party code, assets, and data
+alwaysApply: true
+---
+
+# Attribution
+
+`ATTRIBUTION.md` lists every third-party thing we ship: libraries, fonts, icons, images, map styles, and data sources.
+
+## Rules
+
+- Adding a dependency, asset, or data source ⇒ add its row in the **same** change, never "later".
+- Removing one ⇒ remove its row.
+- Copying a snippet from a blog, Stack Overflow, or another repository ⇒ attribute it with the source URL and licence, even if it is only a few lines.
+- Keep the licence column matching what the package actually ships, including after version bumps.
+
+## Row format
+
+| Component | Source | Licence | Used for |
+|---|---|---|---|
+| `hono` | npm | MIT | API framework |
+
+## Attribution shown in the app, not just in a file
+
+Some licences require visible credit at runtime. Map views must always display "© OpenStreetMap contributors" alongside the tile provider's required notice. Never hide, shrink past legibility, or restyle that attribution away, and never move it off-screen on small layouts.

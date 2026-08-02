@@ -1,0 +1,29 @@
+---
+description: Keep user-facing strings translatable from the first commit
+globs: apps/app/**
+alwaysApply: false
+---
+
+# Internationalisation
+
+English is the only shipped locale for now, but strings are externalised from day one because retrofitting them across every screen later is far more expensive.
+
+## Rules
+
+- No user-facing literal inside a component. Every label, button, error, empty state, and accessibility label comes from the string catalogue by key.
+- Keys are namespaced and descriptive of the location, not the text: `place.detail.deleteConfirm`, never `areYouSure`.
+- Never build a sentence by concatenating fragments or interpolating mid-clause — word order differs by language. Pass variables into a single templated string.
+- Use the library's plural and date/number formatting rather than hand-rolled `n === 1 ? ... : ...` or manual date strings.
+- Log messages, error class names, and developer-facing text are **not** translated and stay as literals.
+
+```tsx
+// ❌ untranslatable, and the plural and order are baked in
+<Text>You have {n} {n === 1 ? 'place' : 'places'} in this area</Text>
+
+// ✅ one key, the catalogue owns grammar
+<Text>{t('area.detail.placeCount', { count: n })}</Text>
+```
+
+## The library is not chosen yet
+
+Structure code so a catalogue can be dropped in, but do not install an i18n dependency — that is an open decision for the user.
