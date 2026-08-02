@@ -1,189 +1,112 @@
 # AGENTS.md — Locus
 
-Instructions for AI agents and human contributors working in this repository.
+How to work in this repository: conventions, workflow, quality gates, and verification.
 
-Companion product/architecture spec: [`DESIGN.md`](./DESIGN.md). Read it before implementing features.
-
-Human-facing overview: [`README.md`](./README.md) (keep short; put deep guidance here or in DESIGN).
+**What Locus is, and every product or architecture decision, lives in [`DESIGN.md`](./DESIGN.md) — not here.** In one line: an offline-first, self-hosted app for geographic areas, places, and points, built as a TypeScript monorepo with a Hono API and an Expo client that syncs through WatermelonDB. Read the relevant DESIGN section before you implement anything.
 
 ---
 
-## 1. What this project is
+## 1. Which document owns what
 
-**Locus** is an offline-first app for geographic **areas**, **places**, and **points** (POIs/features), plus **collections**, notes, tags, comments, and photos—with sharing and public links.
+| Document | Owns | Do not put here |
+|----------|------|-----------------|
+| `DESIGN.md` | Product rules, domain model, ACL, sync protocol, stack choices and their rationale, phases, risks, settled decisions | Conventions, commands, workflow |
+| `AGENTS.md` | This file — repo conventions, code organisation, CI gates, verification, agent workflow | Anything that decides *what* we build |
+| `.cursor/rules/` | Enforced guardrails, one concern per file: doc structure, design adherence, decisions, security, privacy, licensing, attribution, assets, code quality, testing, i18n, API/data, offline-first client, native dependencies | Long-form specification |
+| `ATTRIBUTION.md` | Every third-party library, asset, and data source we ship | — |
+| `README.md` | Short human-facing intro | Deep guidance — that belongs here or in DESIGN |
 
-**Containment:** Point → optional Place **or** Area (at most one); Place → optional Area. Collections organize any of these. All levels are viewable, savable, and shareable.
+A fact belongs in exactly one of these. If you need it in a second place, link to the first instead of copying it — two copies drift, and the next agent cannot tell which one is current. `.cursor/rules/doc-structure.mdc` is the enforced version of this table.
 
-**Platforms:** Android + Web first; iOS only if cheap later.  
-**Stack:** TypeScript monorepo — **Hono** API + **Expo** / **Expo Router** client + **Drizzle** (Postgres) + **WatermelonDB** local store + **MapLibre**.  
-**Sync:** Our own server implementing WatermelonDB's pull/push protocol over a `ChangeLog` (DESIGN §5).  
-**Deploy:** One API Docker container; embedded PGlite or external Postgres.
+**If code and `DESIGN.md` disagree, stop and ask.** Do not quietly make the docs match the code.
 
----
+### Where to read before you start
 
-## 2. Source of truth
-
-| Document | Role |
-|----------|------|
-| `DESIGN.md` | Product rules, domain model, sync architecture, locked decisions, risks |
-| `AGENTS.md` | This file — conventions, workflows, agent behavior |
-| `.cursor/rules/` | Enforced guardrails: design adherence, decisions, security, privacy, licensing, attribution, assets, code quality, testing |
-| `ATTRIBUTION.md` | Third-party libraries, assets, and data we ship |
-| `README.md` | Short human intro |
-
-If code and DESIGN disagree, **stop and align docs or ask**.
-
-Respect **DESIGN.md**. Do not add sync sidecars, change the database dialect, or swap the client stack without an explicit DESIGN change.
-
----
-
-## 3. Non-negotiable product rules
-
-1. **Offline-first:** UI reads/writes the local WatermelonDB store only. Sync is a side effect.
-2. **Instant UI:** Acknowledge every interaction immediately; network never blocks the UI thread.
-3. **Three sync modes:** offline, power-saving (no persistent socket), live (WebSocket hints that trigger a pull).
-4. **Sync is ours:** WatermelonDB is a client library; the protocol is implemented by our Hono API. No PowerSync/Electric/Couch/etc.
-5. **Client-generated UUIDs** for user-created entities.
-6. **Exactly one Locus API container.** Optional user-supplied Postgres only.
-7. **Postgres dialect only** — embedded PGlite for simple/dev, external Postgres for production. Do not reintroduce server-side SQLite.
-8. **Domain:** Area / Place / Point hierarchy; Collections for organization; share any level.
-9. **Area geometry:** GeoJSON Polygon/MultiPolygon is source of truth; maintain derived bbox on write; free-shape map drawing; never use bbox as the boundary.
-10. **GPS:** v1 = one-shot current position. Breadcrumb trails later (P7) — keep storage/sync extensible.
-11. **Photos in v1** — local-first, upload queue, server-side derivatives, ACL on media URLs.
-12. **Public links:** GUID/UUID token, hashed at rest; revoke/expiry; Expo Router `/p/[token]` with a server-rendered preview shell.
-13. **Email/password only**; **no** anonymous public comments; **self-host only** (the app must let users set the server URL).
-14. **Maps:** MapLibre with an operator-supplied style URL. Never point at public OSM tile servers; always show OSM attribution.
-15. **Do not** invent icons/images or use copyrighted assets without user approval.
-16. **Apache-2.0:** every dependency and asset must be licence-compatible, free to use, and listed in `ATTRIBUTION.md`.
-17. **No unilateral decisions:** new dependencies, schema changes, or unspecified behaviour need the user's approval first.
-18. **No telemetry or third-party egress.** No analytics, crash reporting, phone-home, or runtime CDN assets. The only outbound calls are to the operator's own server and their configured tile provider.
+| Working on | Read |
+|------------|------|
+| Anything touching permissions, sharing, or public links | DESIGN §4 — the permission matrix and its resolution order |
+| Sync, the wire contract, cursors, conflicts | DESIGN §5, including "hard parts that must be handled explicitly" |
+| Adding or changing a dependency | DESIGN §6 and §13, then `.cursor/rules/licensing.mdc` — and ask first |
+| API routes, env vars, operational behaviour | DESIGN §7 |
+| Any screen, route, or list ordering | DESIGN §8 |
+| Deployment, Docker, ports, volumes | DESIGN §9 |
+| Deciding whether something is already settled | DESIGN §13 — open items need a decision, settled ones need a design change |
 
 ---
 
-## 4. Repository layout (target)
+## 2. Repository layout
 
 ```text
 locus/
   apps/
-    api/                 # Hono + Drizzle
+    api/                 # Hono + Drizzle (Docker)
     app/                 # Expo + Expo Router
   packages/
-    shared/              # Zod schemas, sync types, Turf geometry helpers
+    shared/              # Zod schemas, sync types, permission fixture, Turf geometry helpers
   deploy/
   DESIGN.md
   AGENTS.md
   README.md
+  ATTRIBUTION.md
 ```
 
----
+```text
+apps/api/src/
+  index.ts
+  env.ts
+  db/schema.ts
+  routes/                # auth, areas, places, points, collections, shares, publicLinks, media, sync, p
+  services/              # permissions, syncApply, mediaStorage, mailer
+  ws/live.ts
+```
 
-## 5. Backend conventions (Hono / TypeScript)
+The client route tree is part of the product surface and is specified in DESIGN §8.
 
-- **Hono** + **Zod** validation, with schemas shared from `packages/shared`.
-- **Drizzle** `pg-core` schema + drizzle-kit migrations; run migrations at startup behind a lock.
-- Models: Area, Place, Point, Collection, CollectionItem, tags, notes, comments, photos, shares, invites, public links, sessions, ChangeLog.
-- One `can(principal, action, resource)` for REST, sync apply, media, and WS subscribe — inheritance rules from DESIGN §4.
-- Sync apply is **idempotent** and appends a monotonic `server_seq`; guard against out-of-order commits (DESIGN §5).
-- ChangeLog rows carry `device_id` so clients can suppress their own echoes.
-- Soft deletes via `deleted_at`; cascade soft-delete owned children as one event.
-- Media under `MEDIA_ROOT`, content-addressed, with generated derivatives; never serve without ACL checks.
-- Tests: Vitest + Hono's test client; Testcontainers for real Postgres. Cover permissions, late-grant backfill, and sync idempotency early.
-- No secrets in git; `.env.example` only.
-
-### Coding style
-
-- Match existing code once present.
-- Strict TypeScript; small focused modules; no unrelated refactors.
+Anything both the API and the client must agree on — schemas, sync types, geometry maths, the permission fixture — goes in `packages/shared` so the two cannot drift.
 
 ---
 
-## 6. Client conventions (Expo)
+## 3. Backend conventions (Hono / TypeScript)
 
-- Requires a **development build** (`expo-dev-client`); Expo Go cannot load MapLibre or WatermelonDB.
-- **WatermelonDB** is the UI source of truth; components read observables, never fetch.
-- The sync driver and the photo upload queue own all network I/O.
-- MapLibre: `maplibre-gl` on web, `@maplibre/maplibre-react-native` on Android; split with `*.native.tsx` / `*.web.tsx`.
-- Polygon drawing: `terra-draw`/`mapbox-gl-draw` on web, custom gestures on native; shared geometry maths in `packages/shared` (Turf).
-- Server URL is user-configurable; never hardcode an instance.
-- Never wipe local data on a 401; refresh must be single-flight.
-- Instant interaction checklist in DESIGN §8.
-- E2E: Maestro for Android, Playwright for web.
+- Validate every body, param, and query with a **Zod** schema imported from `packages/shared`. Never hand-roll a parallel schema in `apps/api`.
+- **Drizzle** `pg-core` + drizzle-kit migrations. Use the query builder; never concatenate SQL.
+- Permission checks go through the one `can(principal, action, resource)` service. No inline ownership checks in route handlers.
+- Filter at the query level for list and pull endpoints. Never fetch-then-filter in JavaScript.
+- Keep domain writes and sync apply on one path so `ChangeLog` cannot diverge between them.
+- New config gets a placeholder row in `.env.example` in the same change. No secrets in git.
+- Tests: **Vitest** + Hono's test client, with **Testcontainers** for real Postgres. Cover permissions, late-grant backfill, and sync idempotency early rather than at P6.
 
 ---
 
-## 7. Sync checklist
+## 4. Client conventions (Expo)
 
-- [ ] Offline queue + instant UI
-- [ ] Power-saving without persistent socket
-- [ ] Live WebSocket hints trigger a pull (one apply path)
-- [ ] Survives app kill
-- [ ] Late grants backfill; revocation purges local rows
-- [ ] Echo suppression via `device_id`
-- [ ] Poison changes parked, never head-of-line blocking
-- [ ] ChangeLog compaction + "cursor too old → full resync"
-- [ ] ACL enforced on pull, media, and public links (incl. inheritance)
-- [ ] LWW uses server ordering, never client wall clocks
-
-**Do not** add external sync appliances.
+- Requires a **development build** (`expo-dev-client`). Expo Go cannot load MapLibre or WatermelonDB, so "it runs in Expo Go" is not a signal.
+- Components read WatermelonDB observables. A component must never fetch — the sync driver and the photo upload queue own all network I/O, and lint enforces it.
+- Split platform-divergent files with `*.native.tsx` / `*.web.tsx`, which is where MapLibre's two APIs are reconciled (`maplibre-gl` on web, `@maplibre/maplibre-react-native` on Android).
+- Polygon drawing: `terra-draw` / `mapbox-gl-draw` on web, custom gestures on native, shared geometry maths in `packages/shared`.
+- The server URL is user-configurable. Never hardcode an instance, in code, tests, or fixtures.
+- Never wipe local data on a 401. Token refresh must be single-flight or you get logout loops.
+- Externalise user-facing strings by key from the start, even though the i18n library is unchosen.
+- E2E: **Maestro** for Android, **Playwright** for web.
 
 ---
 
-## 8. How agents should work
+## 5. Coding style
 
-1. Read `DESIGN.md` + this file for the area you touch.
-2. Ask on DESIGN §13 open items before locking new dependencies.
-3. Keep changes scoped to the request.
-4. Update DESIGN/AGENTS/README when architecture or product rules change.
-5. Do not create git commits unless the user explicitly asks.
-6. On multi-step plans: one step, propose commit message, wait for “continue”.
-7. Next: P0 scaffold when asked to implement.
-
-### Verifying your work
-
-- Web is the automated feedback loop: run it under Playwright and use screenshots as evidence a UI change renders.
-- Android is verified by the maintainer on a dev build. No automated check here can see a MapLibre native render.
-- Passing tests is **not** the same as a working screen. State plainly what you verified and what you could not.
-- Never report a task complete on the strength of a build succeeding alone.
-
-### Commits / PRs
-
-- Commits only when asked; message focuses on **why**.
-- PRs via `gh` when asked; include test plan.
+- Match the surrounding code once it exists; its idiom wins over a general preference.
+- Strict TypeScript, small focused modules, no unrelated refactors in a feature change.
+- Comments explain a constraint the code cannot show. Do not narrate what the next line does.
 
 ---
 
-## 9. Deployment notes
+## 6. Quality gates
 
-- API port default **8000**.
-- Persist database (PGlite) and media under `/data`.
-- Compose may include Postgres; **never** a second Locus service.
-- Expo web ships as static assets served by the API or a reverse proxy.
-- Migrations must not destroy user data on default paths.
-- Run as non-root; expose a healthcheck.
+These are what CI fails on, and they are a P0 deliverable — a convention nothing enforces is not a convention.
 
----
-
-## 10. Stack status
-
-| Layer | Status |
-|-------|--------|
-| TypeScript monorepo | **Locked** |
-| Hono + Drizzle API | **Locked** |
-| Postgres only (PGlite or external) | **Locked** |
-| Expo + Expo Router (dev build) | **Locked** |
-| WatermelonDB local store + sync driver | **Locked** |
-| MapLibre + operator-supplied tiles | **Locked** |
-| One API container | **Locked** |
-| Area / Place / Point + Collections | **Locked** |
-| Hand-rolled JWT auth + Argon2id | **Locked** |
-| pnpm workspaces, Node LTS | **Locked** |
-| Distribution, OTA updates, polygon limits, i18n library | **Open** (DESIGN §13) |
-
----
-
-## 11. Useful commands (fill in as repo grows)
-
-pnpm workspaces; no Turborepo. Commands below are the P0 target, not yet real.
+- `tsc --noEmit` with `strict` and `noUncheckedIndexedAccess`.
+- Lint bans `any`, and bans `fetch` inside `apps/app` outside the sync driver.
+- The test suite, including DESIGN §4's permission matrix iterated as a fixture exported from `packages/shared`.
+- A licence checker against the allow-list in `.cursor/rules/licensing.mdc`.
 
 ```bash
 pnpm install
@@ -194,17 +117,44 @@ pnpm typecheck && pnpm lint && pnpm test    # what CI gates on
 pnpm licences                               # allow-list check
 ```
 
+pnpm workspaces, no Turborepo. These commands are the P0 target and are not real yet — update this section as they land.
+
 ---
 
-## 12. What not to do
+## 7. Verifying your work
 
-- Do not introduce FastAPI, Fastify, Flutter, or Capacitor-only as the primary stack.
-- Do not add PowerSync, Electric, Couch, or other sync sidecars.
+- **Web is the automated feedback loop.** Drive it under Playwright and use screenshots as the evidence that a UI change actually renders.
+- **Android is verified by the maintainer** on a dev build. No automated check in this repo can see a MapLibre native render, so do not claim one.
+- Passing tests is not the same as a working screen, and a successful build is not verification of anything visual.
+- State plainly what you verified and what you could not. An unverified change described as done is worse than one described as unverified.
+
+---
+
+## 8. Workflow
+
+1. Read the DESIGN sections for the area you touch (see the table in §1).
+2. Keep changes scoped to what was asked.
+3. Ask before anything in DESIGN §13's open items, before any new dependency, and before inventing behaviour the spec does not describe. Ambiguity is a question, not a free choice.
+4. When a decision is made, record it in `DESIGN.md` in the same change that implements it, so the next session does not re-litigate it.
+5. On a multi-step plan: complete one step, propose a commit message, then wait for "continue".
+6. Never create a git commit unless explicitly asked. Commit messages explain **why**; PRs go through `gh` and include a test plan.
+7. Next up when asked to implement: the P0 scaffold.
+
+---
+
+## 9. What not to do
+
+Failure modes that have to be actively avoided. DESIGN is authoritative for why each one is closed.
+
+- Do not swap the stack: no FastAPI, Fastify, Flutter, or Capacitor-as-primary.
+- Do not add PowerSync, Electric, Couch, or any other sync sidecar. WatermelonDB is a client library; the protocol is ours.
 - Do not add a server-side SQLite path or a second Drizzle dialect.
-- Do not bundle a notification service (Apprise or otherwise). We POST to an operator-supplied webhook; that is the whole feature.
-- Do not build network-first with cache-as-afterthought.
-- Do not require always-on sockets for normal use.
-- Do not point any environment at public OSM tile servers.
-- Do not implement breadcrumb/GPX until P7; keep sync/storage extensible.
+- Do not add a second container to the Compose file. Postgres is the only exception, and it is user-supplied.
+- Do not bundle a notification service. We POST to an operator-supplied webhook; that is the whole feature.
+- Do not build network-first with caching bolted on afterwards, and do not make normal use depend on an always-on socket.
+- Do not point any environment at public OSM tile servers, and never hide the OSM attribution.
+- Do not implement breadcrumbs or GPX before P7, but keep sync and storage extensible for them.
 - Do not add OAuth or anonymous public comments in v1.
 - Do not expand into navigation, social feeds, or SaaS billing unless asked.
+- Do not add telemetry, crash reporting, phone-home calls, or runtime CDN assets. The only outbound calls are to the operator's own server, their tile provider, and their configured webhook.
+- Do not invent icons, images, or brand marks, and do not use copyrighted assets without approval.

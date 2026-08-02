@@ -32,4 +32,4 @@ const onSave = () => database.write(() => points.create(p));
 
 ## Sync changes
 
-Any change to sync behaviour must still satisfy the checklist in `AGENTS.md` §7 — idempotent replay, echo suppression, and no head-of-line blocking of the queue.
+Any change to sync behaviour must still satisfy every item under "hard parts that must be handled explicitly" in `DESIGN.md` §5 — idempotent replay, echo suppression, and no head-of-line blocking of the queue.

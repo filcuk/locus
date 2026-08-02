@@ -1,7 +1,17 @@
 # Locus — Design Document
 
-> Purpose: Product and architecture spec for implementing Locus.  
-> Companion: [`AGENTS.md`](./AGENTS.md).
+> **Scope:** what Locus is, how it is built, and what has been decided. Product rules, domain model, architecture, and locked decisions live here and nowhere else.
+> **Not here:** how to work in this repository — conventions, commands, quality gates, verification, and agent workflow are in [`AGENTS.md`](./AGENTS.md).
+
+| § | Section | § | Section |
+|---|---------|---|---------|
+| [1](#1-product-vision) | Product vision | [8](#8-client) | Client |
+| [2](#2-goals-and-non-goals) | Goals and non-goals | [9](#9-deployment) | Deployment |
+| [3](#3-key-flows) | Key flows | [10](#10-security) | Security |
+| [4](#4-domain-model) | Domain model, ACL | [11](#11-implementation-phases) | Implementation phases |
+| [5](#5-sync) | Sync | [12](#12-success-criteria) | Success criteria |
+| [6](#6-technology-stack) | Technology stack | [13](#13-risks-and-open-items) | Risks, open items, settled |
+| [7](#7-backend) | Backend | | |
 
 ---
 
@@ -53,7 +63,7 @@ Collection  (organizational; members may be areas, places, and/or points)
 - Native desktop apps; iOS as a hard requirement
 - Social feed, messaging, turn-by-turn navigation
 - Hosted SaaS; OAuth; anonymous comments on public links
-- Public browse/discovery index (see §12 open items)
+- Public browse/discovery index (see [§13](#13-risks-and-open-items) open items)
 - Multi-region active-active clustering; multi-replica API
 
 ### Deferred (post-v1, in scope)
@@ -284,7 +294,7 @@ Defined as Zod schemas in `packages/shared` and covered by a conformance suite t
 ```
 
 - `cursor` is a `server_seq`, never a wall clock. `cursor=0` means full sync.
-- `timestamp` is WatermelonDB's field name for what we return as a sequence watermark. Only advance it past fully-committed transactions (§5 hard part 3).
+- `timestamp` is WatermelonDB's field name for what we return as a sequence watermark. Only advance it past fully-committed transactions (hard part 3 below).
 - Rows the caller may no longer access appear in `deleted` — revocation and soft-delete are indistinguishable to the client, and both purge locally.
 - Late grants inject the affected rows into `created`/`updated` regardless of cursor.
 - Rows authored by the calling `device_id` are omitted (echo suppression).
@@ -303,7 +313,7 @@ Defined as Zod schemas in `packages/shared` and covered by a conformance suite t
 
 - **Idempotency:** the server stores `push_id` with its response for a retention window and replays that stored response verbatim on a repeat.
 - **Stale cursor ⇒ `409 PULL_REQUIRED`.** The client pulls, rebases, and retries; the server never merges blind.
-- **Rejected records are parked, not retried forever** (§5 hard part 5). They surface in the UI as conflicts and must not block later changes in the queue.
+- **Rejected records are parked, not retried forever** (hard part 5 below). They surface in the UI as conflicts and must not block later changes in the queue.
 - Server assigns `updated_at` and ordering; client wall clocks are never trusted for LWW.
 
 **Error codes:** `PULL_REQUIRED` (409), `CURSOR_TOO_OLD` (409, client restarts at `cursor=0`), `SCHEMA_VERSION_UNSUPPORTED` (426), `FORBIDDEN` (403), `VALIDATION_FAILED` (422).
@@ -351,20 +361,10 @@ Do not add external sync sidecars.
 | Auth | Email + password; **hand-rolled JWT** access + refresh over the `Session` table; Argon2id |
 | Public links | GUID/UUID; Expo Router `p/[token]` with a server-rendered HTML shell for previews |
 | Media | Content-addressed files on the API container volume + generated derivatives |
-| Markdown | Descriptions only; sanitised **server-side** for public pages (library unchosen, §13) |
+| Markdown | Descriptions only; sanitised **server-side** for public pages (library unchosen, [§13](#13-risks-and-open-items)) |
 | Notifications | Optional operator-supplied outbound webhook. We ship no notifier — see below |
 
-```text
-locus/
-  apps/
-    api/          # Hono + Drizzle (Docker)
-    app/          # Expo + Expo Router
-  packages/
-    shared/       # Zod schemas, sync types, geometry helpers
-  deploy/
-```
-
-Use `*.native.tsx` / `*.web.tsx` where MapLibre APIs diverge.
+**Three workspaces, and only three:** `apps/api` (Hono + Drizzle), `apps/app` (Expo + Expo Router), and `packages/shared` (Zod schemas, sync types, geometry helpers) — anything both sides must agree on lives in `shared` so it cannot drift. Directory conventions are in `AGENTS.md`.
 
 ### Why these, briefly
 
@@ -378,16 +378,6 @@ Use `*.native.tsx` / `*.web.tsx` where MapLibre APIs diverge.
 
 ## 7. Backend
 
-```
-apps/api/src/
-  index.ts
-  env.ts
-  db/schema.ts
-  routes/          # auth, areas, places, points, collections, shares, publicLinks, media, sync, p
-  services/        # permissions, syncApply, mediaStorage, mailer
-  ws/live.ts
-```
-
 | Env | Purpose |
 |-----|---------|
 | `DATABASE_URL` | External Postgres; unset ⇒ embedded PGlite under `/data` |
@@ -400,9 +390,14 @@ apps/api/src/
 | `SMTP_*` | Password reset, verification, invites |
 | `NOTIFY_WEBHOOK_URL` | Optional; Apprise-compatible / ntfy / raw webhook. Unset ⇒ no outbound notifications |
 
-API surface: auth (incl. password reset); domain CRUD; media upload/derivatives; shares, invites, public links; `GET /p/:token`; `GET /sync/pull`, `POST /sync/push`; live WebSocket. Domain writes and sync apply share one path so ChangeLog stays consistent. A single `can(principal, action, resource)` backs REST, sync, media, and WS subscribe.
+API surface: auth (incl. password reset); domain CRUD; media upload/derivatives; shares, invites, public links; `GET /p/:token`; `GET /sync/pull`, `POST /sync/push`; live WebSocket.
 
-Operational: run migrations at startup behind a lock; expose a healthcheck; run as non-root; structured logs with no tokens.
+Two architectural constraints on that surface:
+
+- **Domain writes and sync apply share one path** so ChangeLog stays consistent — a REST write and a pushed change must be indistinguishable downstream.
+- **A single `can(principal, action, resource)`** backs REST, sync, media, and WS subscribe, implementing [§4](#4-domain-model)'s resolution order once.
+
+Operational requirements: run migrations at startup behind a lock, and never destructively on a default path; expose a healthcheck; run as non-root; structured logs that never contain tokens, coordinates, or user emails.
 
 ---
 
@@ -464,7 +459,7 @@ Photo gallery header, then title and **markdown** description, tag chips, visit 
 
 ## 9. Deployment
 
-One **API** container. Postgres, when external, is user-supplied. No sync sidecar. Expo web is served as static assets by the API or a reverse proxy — never a second app service.
+One **API** container, listening on **8000** by default. Postgres, when external, is user-supplied. No sync sidecar. Expo web is served as static assets by the API or a reverse proxy — never a second app service. The database (when PGlite) and media both persist under `/data`.
 
 ```text
 # Simple / dev: embedded PGlite, no external database
@@ -518,21 +513,12 @@ Android specifics: the app requires a **development build**; self-hosters on pla
 
 ### P0 must also deliver
 
-Conventions are only real once something enforces them. P0 is not done until CI fails the build on:
-
-- `tsc --noEmit` with `strict` and `noUncheckedIndexedAccess`.
-- Lint rules banning `any`, and banning `fetch` inside `apps/app` outside the sync driver.
-- The test suite, including the permission matrix iterated as a fixture.
-- A licence checker with the allow-list from `.cursor/rules/licensing.mdc`.
+Conventions are only real once something enforces them. **P0 is not done until CI fails the build on every gate listed in `AGENTS.md`** — typecheck, the lint bans, the test suite with the permission matrix iterated as a fixture, and the licence allow-list check.
 
 P0 also carries two de-risking spikes, both cheap now and expensive later:
 
-- **WatermelonDB schema shape.** Its columns are limited to string, number, and boolean with no foreign-key constraints, so `geom_geojson` is a serialised string and containment is enforced in application code. Confirm the client schema against §4 before P2 builds areas on top of it.
+- **WatermelonDB schema shape.** Its columns are limited to string, number, and boolean with no foreign-key constraints, so `geom_geojson` is a serialised string and containment is enforced in application code. Confirm the client schema against [§4](#4-domain-model) before P2 builds areas on top of it.
 - **Cursor semantics.** WatermelonDB types `lastPulledAt` as a timestamp while we return a `server_seq` watermark. Prove the round-trip holds before P1.
-
-### Verification
-
-Web is built first and is the agent-facing feedback loop: Playwright drives it and screenshots are the evidence a UI change works. Android is verified by the maintainer on a dev build, because no automated check here can see a MapLibre native render. "Tests pass" is therefore **not** sufficient to call a visual change done — say plainly what was and was not verified.
 
 ---
 
@@ -573,7 +559,7 @@ Web is built first and is the agent-facing feedback loop: Playwright drives it a
 
 | Decision | Outcome |
 |----------|---------|
-| Effective visibility rule | Confirmed as written in §4; `visibility` gates anonymous exposure only |
+| Effective visibility rule | Confirmed as written in [§4](#4-domain-model); `visibility` gates anonymous exposure only |
 | Auth | Hand-rolled JWT over the `Session` table with Argon2id, not a session library |
 | Monorepo tooling | pnpm workspaces, no Turborepo |
 | `device_id` lifecycle | New UUID per install, stored beside the local database |
@@ -582,4 +568,7 @@ Web is built first and is the agent-facing feedback loop: Playwright drives it a
 | Tags | Curated `system` set, plus `user`-scoped tags private to their owner |
 | Home ordering | Hierarchy preserved; roots sorted by distance to their nearest descendant |
 | Notifications | Optional operator-supplied webhook; we bundle no notifier and add no container |
+| Sync engine | WatermelonDB client library over our own Hono/`ChangeLog` protocol; no external sync appliance |
+| Server database | Postgres dialect only — PGlite embedded or external Postgres; no server-side SQLite |
+| Container count | Exactly one Locus API container; optional user-supplied Postgres only |
 | Runtime | Node LTS in Docker |
