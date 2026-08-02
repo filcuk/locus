@@ -6,6 +6,7 @@
   "license": "Apache-2.0",
   "scripts": {
     "start": "expo start --dev-client",
+    "dev": "expo start --web",
     "android": "expo start --dev-client --android",
     "web": "expo start --web",
     "typecheck": "tsc --noEmit -p tsconfig.json",
