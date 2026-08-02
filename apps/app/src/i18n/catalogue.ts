@@ -64,6 +64,13 @@ export const catalogue = {
 
   'common.loading': 'Loading…',
   'common.back': 'Back',
+
+  'syncStatus.offline': 'Offline',
+  'syncStatus.syncing': 'Syncing',
+  'syncStatus.live': 'Live',
+  'syncStatus.error': 'Error',
+  /** Quiet power-saving rest (online, not Live) — not a DESIGN §5 mode label. */
+  'syncStatus.idle': 'Online',
 } as const;
 
 export type MessageKey = keyof typeof catalogue;
