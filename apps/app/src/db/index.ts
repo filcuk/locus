@@ -12,3 +12,9 @@ export {
 } from './containment';
 export { schema } from './schema';
 export { modelClasses } from './models';
+export {
+  createPlaceLocal,
+  createPointLocal,
+  softDeletePlaceLocal,
+  softDeletePointLocal,
+} from './writes';

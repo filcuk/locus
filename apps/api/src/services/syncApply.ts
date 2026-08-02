@@ -197,10 +197,22 @@ async function applyPlace(
     deletedAt: row.deleted_at ?? null,
   };
 
-  if (op === 'create') {
-    await ctx.db.insert(places).values(values);
-  } else {
-    await ctx.db.update(places).set(values).where(eq(places.id, row.id));
+  try {
+    if (op === 'create') {
+      await ctx.db.insert(places).values(values);
+    } else {
+      await ctx.db.update(places).set(values).where(eq(places.id, row.id));
+    }
+  } catch (err) {
+    if (isPgConstraintError(err)) {
+      return {
+        table: 'places',
+        id: row.id,
+        code: 'VALIDATION_FAILED',
+        message: 'place write violated a database constraint',
+      };
+    }
+    throw err;
   }
 
   await appendChange(ctx.db, {
@@ -266,10 +278,23 @@ async function applyPoint(
     deletedAt: row.deleted_at ?? null,
   };
 
-  if (op === 'create') {
-    await ctx.db.insert(points).values(values);
-  } else {
-    await ctx.db.update(points).set(values).where(eq(points.id, row.id));
+  try {
+    if (op === 'create') {
+      await ctx.db.insert(points).values(values);
+    } else {
+      await ctx.db.update(points).set(values).where(eq(points.id, row.id));
+    }
+  } catch (err) {
+    // DESIGN §4 CHECK: place_id XOR area_id (and other integrity constraints).
+    if (isPgConstraintError(err)) {
+      return {
+        table: 'points',
+        id: row.id,
+        code: 'VALIDATION_FAILED',
+        message: 'A point may belong to a place or an area, never both',
+      };
+    }
+    throw err;
   }
 
   await appendChange(ctx.db, {
@@ -415,6 +440,27 @@ function readId(raw: unknown): string {
     return raw.id;
   }
   return '00000000-0000-4000-8000-000000000000';
+}
+
+/** Postgres check / unique / FK violations (SQLSTATE class 23). */
+function isPgConstraintError(err: unknown): boolean {
+  let cur: unknown = err;
+  for (let i = 0; i < 4 && cur; i += 1) {
+    if (
+      typeof cur === 'object' &&
+      cur !== null &&
+      'code' in cur &&
+      typeof (cur as { code: unknown }).code === 'string' &&
+      (cur as { code: string }).code.startsWith('23')
+    ) {
+      return true;
+    }
+    cur =
+      typeof cur === 'object' && cur !== null && 'cause' in cur
+        ? (cur as { cause: unknown }).cause
+        : null;
+  }
+  return false;
 }
 
 function placeToWire(row: {
