@@ -8,6 +8,8 @@ import { createDb, type DbHandle } from './db/client.js';
 import { runMigrations } from './db/migrate.js';
 import { env, loadEnv } from './env.js';
 import { createHealthRoutes } from './routes/health.js';
+import { createPlacesRoutes } from './routes/places.js';
+import { createPointsRoutes } from './routes/points.js';
 import { createSyncRoutes } from './routes/sync.js';
 
 export type AppVariables = {
@@ -23,6 +25,8 @@ export function createApp(handle: DbHandle) {
   });
 
   app.route('/', createHealthRoutes(handle));
+  app.route('/', createPlacesRoutes(handle));
+  app.route('/', createPointsRoutes(handle));
   app.route('/', createSyncRoutes(handle));
 
   app.get('/', (c) =>
