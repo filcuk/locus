@@ -10,7 +10,7 @@ Product rules and stack choices live in [`DESIGN.md`](./DESIGN.md). Conventions,
 
 | Need | Notes |
 |------|--------|
-| **Node.js** | `>=22` (see root `package.json` `engines`) |
+| **Node.js** | `>=24.7` (see root `package.json` `engines`; required for `node:crypto` Argon2id) |
 | **pnpm** | `11.18.0` (`packageManager` field). Enable via Corepack: `corepack enable` |
 | **Android SDK** (for native) | Install Android Studio / SDK. Set **both** `ANDROID_HOME` and `ANDROID_SDK_ROOT` to the **same real SDK root** (the directory that contains `platform-tools`, not a parent shortcuts folder) |
 | **JDK** | Required by Gradle when building the Android app (Android Studio’s bundled JDK is fine) |

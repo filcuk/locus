@@ -7,17 +7,25 @@ import { Hono } from 'hono';
 import { createDb, type DbHandle } from './db/client.js';
 import { runMigrations } from './db/migrate.js';
 import { env, loadEnv } from './env.js';
+import { createAuthRoutes } from './routes/auth.js';
 import { createHealthRoutes } from './routes/health.js';
 import { createPlacesRoutes } from './routes/places.js';
 import { createPointsRoutes } from './routes/points.js';
 import { createSyncRoutes } from './routes/sync.js';
+import { createMailer, type Mailer } from './services/mailer.js';
 
 export type AppVariables = {
   db: DbHandle['db'];
 };
 
-export function createApp(handle: DbHandle) {
+export type CreateAppOptions = {
+  mailer?: Mailer;
+  now?: () => Date;
+};
+
+export function createApp(handle: DbHandle, options: CreateAppOptions = {}) {
   const app = new Hono<{ Variables: AppVariables }>();
+  const mailer = options.mailer ?? createMailer();
 
   app.use('*', async (c, next) => {
     c.set('db', handle.db);
@@ -25,6 +33,7 @@ export function createApp(handle: DbHandle) {
   });
 
   app.route('/', createHealthRoutes(handle));
+  app.route('/', createAuthRoutes(handle, { mailer, now: options.now }));
   app.route('/', createPlacesRoutes(handle));
   app.route('/', createPointsRoutes(handle));
   app.route('/', createSyncRoutes(handle));

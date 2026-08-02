@@ -348,7 +348,7 @@ Do not add external sync sidecars.
 |-------|--------|
 | Language | TypeScript monorepo |
 | Tooling | **pnpm workspaces** — no Turborepo at three packages; revisit if CI gets slow |
-| API | **Hono** (Node LTS in Docker) |
+| API | **Hono** (Node ≥24.7 in Docker) |
 | ORM | **Drizzle** (`pg-core`) + drizzle-kit |
 | Server DB | **Postgres only** — embedded **PGlite** for simple/dev, external Postgres for production |
 | Client | **Expo** with a **development build** (native modules; Expo Go is not usable) |
@@ -358,7 +358,7 @@ Do not add external sync sidecars.
 | Tiles | **OpenFreeMap public instance by default** — free, no API key; operators may substitute any style URL (MapTiler, Stadia, self-hosted); OSM attribution required |
 | Geometry | **Turf.js** (bbox, point-in-polygon, simplify) in `packages/shared` |
 | Validation | **Zod** in `packages/shared`, shared by API and client |
-| Auth | Email + password; **hand-rolled JWT** access + refresh over the `Session` table; Argon2id |
+| Auth | Email + password; **hand-rolled JWT** (`hono/jwt`) access + refresh over the `Session` table; Argon2id via `node:crypto` |
 | Public links | GUID/UUID; Expo Router `p/[token]` with a server-rendered HTML shell for previews |
 | Media | Content-addressed files on the API container volume + generated derivatives |
 | Markdown | Descriptions only; sanitised **server-side** for public pages (library unchosen, [§13](#13-risks-and-open-items)) |
@@ -437,7 +437,7 @@ No `utils/` or `helpers/` catch-alls: a module that cannot be named after what i
 - **WatermelonDB** supplies the local store, outbox, and per-column change tracking that we would otherwise hand-roll, and its web adapter avoids the COOP/COEP headers that SQLite-WASM would force on us (those headers conflict with third-party tiles and images).
 - **OpenFreeMap by default** because it is free, keyless, and explicitly permits application-scale and commercial use, so a self-hoster gets a working map without signing up to anything. It is MIT-licensed and self-hostable, and its styles carry the OSM attribution automatically under MapLibre. The style URL stays configurable for operators who want MapTiler, Stadia, or their own tiles, and offline PMTiles remains the post-v1 path. The OSM Foundation's own service (`tile.openstreetmap.org`) is never an option — its usage policy forbids application-scale traffic.
 - **Notifications are a webhook we POST to, not a notifier we bundle.** Apprise is a Python library (BSD-2-Clause) and its REST wrapper `apprise-api` (MIT) is a sidecar container — either would put Python in our Node image or add a second service, both of which we have ruled out. An operator who already runs Apprise, ntfy, or anything webhook-shaped sets `NOTIFY_WEBHOOK_URL` and we post to it. Operators who set nothing get email via existing SMTP config, or nothing. Notifications are off by default and opt-in per user, since outbound calls leave the self-hosted boundary.
-- **Hand-rolled auth** because the offline model needs month-long refresh TTLs and device-bound sessions that also feed sync echo suppression. A session library would own the schema and fight both. The scope stays small — password hashing, token issue/refresh/revoke, reset — and password hashing itself uses a vetted Argon2id implementation, never a bespoke one.
+- **Hand-rolled auth** because the offline model needs month-long refresh TTLs and device-bound sessions that also feed sync echo suppression. A session library would own the schema and fight both. The scope stays small — password hashing, token issue/refresh/revoke, reset — and password hashing itself uses Node's built-in `crypto.argon2` / `argon2id` (Node ≥24.7), never a bespoke or third-party hashing routine.
 
 ---
 
@@ -553,7 +553,7 @@ Android specifics: the app requires a **development build**; self-hosters on pla
 
 ## 10. Security
 
-- Argon2id for passwords, via a vetted library — never a bespoke hashing routine.
+- Argon2id for passwords, via Node's built-in `crypto.argon2` (`argon2id`) — never a bespoke hashing routine and no separate npm argon2 package.
 - Refresh tokens are hashed at rest, single-use with rotation, bound to a `Session` row that can be revoked per device.
 - Public links: GUID/UUID in the URL, **hashed at rest**; revoke/expiry; no short or sequential ids.
 - `Referrer-Policy: no-referrer` on public pages so tokens don't leak to tile or image hosts; keep tokens out of media URLs.
@@ -626,7 +626,8 @@ P0 also carries two de-risking spikes, both cheap now and expensive later:
 | Decision | Outcome |
 |----------|---------|
 | Effective visibility rule | Confirmed as written in [§4](#4-domain-model); `visibility` gates anonymous exposure only |
-| Auth | Hand-rolled JWT over the `Session` table with Argon2id, not a session library |
+| Auth | Hand-rolled JWT (`hono/jwt`) over the `Session` table with Argon2id via `node:crypto`, not a session library and not an npm argon2 package |
+| Argon2id implementation | Node built-in `crypto.argon2` / `argon2id` (requires Node ≥24.7); engines + Docker image track that floor |
 | Monorepo tooling | pnpm workspaces, no Turborepo |
 | `device_id` lifecycle | New UUID per install, stored beside the local database |
 | Notes vs comments | Notes are a personal visit timeline, private to their author forever; comments are collaborative and follow the target's view permission |
@@ -637,7 +638,7 @@ P0 also carries two de-risking spikes, both cheap now and expensive later:
 | Sync engine | WatermelonDB client library over our own Hono/`ChangeLog` protocol; no external sync appliance |
 | Server database | Postgres dialect only — PGlite embedded or external Postgres; no server-side SQLite |
 | Container count | Exactly one Locus API container; optional user-supplied Postgres only |
-| Runtime | Node LTS in Docker |
+| Runtime | Node ≥24.7 in Docker (and locally) so built-in Argon2id is available |
 | Tiles | OpenFreeMap public instance as the default `MAP_STYLE_URL`, overridable per instance; never the OSMF tile service |
 | Licence allow-list tooling licences | `Python-2.0` and `BlueOak-1.0.0` are on the allow-list (transitive ESLint tree: `argparse`, `minimatch`); the gate still covers the full install tree |
 | Licence allow-list Expo transitive licences | `0BSD`, `CC-BY-4.0`, and `MPL-2.0` are on the allow-list (Expo/Metro tree: `tslib`, `jsc-safe-url`, `caniuse-lite`, `lightningcss`); the gate still covers the full install tree |

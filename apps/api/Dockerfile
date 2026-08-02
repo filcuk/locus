@@ -1,5 +1,5 @@
 # Non-root API image — one container, listens on 8000 (DESIGN §9).
-FROM node:22-bookworm-slim AS deps
+FROM node:24-bookworm-slim AS deps
 WORKDIR /app
 RUN corepack enable
 COPY package.json pnpm-workspace.yaml pnpm-lock.yaml ./
@@ -7,7 +7,7 @@ COPY apps/api/package.json apps/api/
 COPY packages/shared/package.json packages/shared/
 RUN pnpm install --frozen-lockfile --filter @locus/api...
 
-FROM node:22-bookworm-slim AS runtime
+FROM node:24-bookworm-slim AS runtime
 WORKDIR /app
 RUN corepack enable \
   && groupadd --system --gid 10001 locus \
