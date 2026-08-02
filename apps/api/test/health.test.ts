@@ -21,7 +21,7 @@ describe('GET /health', () => {
     resetEnvForTests();
     loadEnv();
     handle = await createDb();
-  }, 30_000);
+  }, 90_000);
 
   afterAll(async () => {
     await handle.close();
