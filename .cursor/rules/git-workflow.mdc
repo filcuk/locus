@@ -31,6 +31,15 @@ gh stack view                       # where the stack stands
 - Merging is the maintainer's. Never run `gh stack merge` or `gh pr merge` unless explicitly asked.
 - Report the stack — PR numbers and what each layer contains — at the end of a turn.
 
+## Ready for review (not draft)
+
+When a PR is complete for review — coherent, CI green or about to be, no known WIP blockers — mark it **ready for review**. Do not leave reviewable work as a draft unless the maintainer explicitly asks for a draft.
+
+- After `gh stack submit` / `gh pr create`, run `gh pr ready <n>` if the PR opened as a draft.
+- Or create non-draft from the start (`gh pr create` without `--draft`).
+- Keep draft only while the layer is intentionally unfinished (known blockers, incomplete acceptance criteria, or an explicit "keep as draft" ask).
+- When cleaning up open drafts: mark ready if mergeable (or stacked on an open base) and intended for review; skip and note blockers otherwise.
+
 ## Bugbot
 
 Never run Bugbot, never request a Bugbot review, and never post Bugbot comments on pull requests — unless the user explicitly asks for Bugbot in that turn. Do not treat a general "review the PR" request as permission to invoke Bugbot.
