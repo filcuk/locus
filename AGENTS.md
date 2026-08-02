@@ -99,7 +99,7 @@ pnpm typecheck && pnpm lint && pnpm test    # what CI gates on
 pnpm licences                               # allow-list check
 ```
 
-pnpm workspaces, no Turborepo. These commands are the P0 target and are not real yet — update this section as they land.
+pnpm workspaces, no Turborepo. CI (`.github/workflows/ci.yml`) runs `typecheck`, `lint`, `test`, and `licences` on every PR.
 
 ---
 
