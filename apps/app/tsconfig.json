@@ -18,7 +18,8 @@
     "src/**/*.tsx",
     "app.config.ts",
     "expo-env.d.ts",
-    ".expo/types/**/*.ts"
+    ".expo/types/**/*.ts",
+    "../../packages/shared/src/types/**/*.d.ts"
   ],
   "exclude": ["node_modules", "android", "ios", "e2e", "**/*.test.ts"]
 }
