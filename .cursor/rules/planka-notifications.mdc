@@ -1,0 +1,30 @@
+---
+description: Periodically check Planka notifications for maintainer @mentions and board activity
+alwaysApply: true
+---
+
+# Planka notifications
+
+The maintainer may @mention the agent in Planka comments or tasks. Unread notifications are work — do not wait for the chat user to paste them.
+
+MCP server: `user-planka`. Call `GetMcpTools` for the schema before first use in a session.
+
+## When to check ("periodically")
+
+Not a background cron. In agent terms:
+
+1. **Start** of a turn that involves Locus work.
+2. **After** completing a stack layer (commit / PR submit).
+3. **Before** ending a long turn, or when waiting on the user.
+4. Whenever the user says they left something on the board.
+
+## How to handle
+
+1. Call `planka_get_notifications` (optionally filter `types`: `mentionInComment`, `commentCard`, `moveCard`, `addMemberToCard`).
+2. For each unread item: load the card with `planka_get_card` / `planka_get_comments`. Act if in scope; if a decision or clarification is needed, reply with `planka_add_comment` rather than guessing.
+3. After handling, `planka_mark_notifications_read` (`notificationId` or `markAll: true`).
+4. Obey `.cursor/rules/task-board.mdc`: list semantics, never invent labels/lists, every card keeps ≥1 existing board label.
+
+## Workarounds
+
+`planka_get_board` may fail (null `canComment` on memberships). Prefer `planka_get_structure`, `planka_search_cards`, and `planka_get_card`.

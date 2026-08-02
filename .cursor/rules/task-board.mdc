@@ -1,0 +1,60 @@
+---
+description: Keep the Planka board a truthful at-a-glance picture of what is done, in progress, and blocked
+alwaysApply: true
+---
+
+# Task board
+
+Work is tracked on the Planka board **Primary** (`1832888170790782370`) in the 🪷 Locus project, via the `user-planka` MCP server. Resolve list IDs with `planka_get_structure`. Maintainer @mentions and unread inbox items: see `planka-notifications.mdc`.
+
+Someone glancing at the board must be able to tell what is finished, what is moving, and what is stuck, without asking anyone. That only holds if the board is updated as work happens.
+
+## Every unit of work is a card
+
+- Create the card **before** starting: features, bugs, refactors, doc changes, chores, and decisions that need implementing.
+- One card per reviewable unit, matching one stack layer — see the git-workflow rule.
+- Apply **at least one existing board label** when the card is created (kind, area, priority, and/or version as they fit). No card ships untagged.
+- Add tasks (checklist items) when a card has more than one verifiable outcome. Each task is something you can tick off.
+- Work discovered mid-task becomes a new Backlog card. Do not quietly widen the card you are on.
+
+## Lists mean exactly this
+
+| List | Meaning |
+|---|---|
+| Backlog | Known, not scheduled |
+| Planned | Scoped and agreed, next up |
+| Ongoing | Being worked on right now |
+| Testing | Code done, awaiting review, verification, or merge |
+| Hold | Blocked — a comment says by what, and who can unblock it |
+| Completed | Merged and verified |
+| Cancelled | Not doing it — a comment says why |
+
+## Checklist hygiene
+
+Acceptance tasks are the at-a-glance proof of progress. An incomplete checklist on a Completed card is a lie.
+
+- As each acceptance criterion is met, mark that task complete with `planka_update_task` (`isCompleted: true`). Do not wait until the card moves.
+- Before moving a card to **Completed**, every task must be checked — or remove/cancel obsolete tasks and leave a comment saying why.
+- Never move a card to Completed while its checklist is still fully (or mostly) incomplete.
+- On Planned / Ongoing / Testing / Hold, only check tasks that are verifiably done; do not mass-complete a card that is still in flight.
+
+## Keep it live
+
+- Move a card **when its state changes**, not at the end of a session. A card sitting in Ongoing that nobody is touching is a lie.
+- Nothing waits in Ongoing. Waiting on review is Testing; waiting on someone else is Hold.
+- Attach the PR as a link attachment when a layer is submitted, and comment the result when a quality gate passes or fails.
+- Blocking or cancelling always carries a comment with the reason, so the board explains itself without a conversation.
+- Never delete a card to tidy the board — cancel it, so the history survives.
+- Before ending a turn, reconcile: every card you touched reflects reality, including checklist completion.
+
+## Labels
+
+The board already has a prepared label set (kind, priority numerals, area, version). Discover them from cards that already have tags, or via a board read path that returns label id + name — never invent names or colours.
+
+- Every new card gets **at least one** existing label via `planka_add_card_labels` at create time.
+- Map the card's purpose onto those names (e.g. feature/api/ci/cd/deps/decision/Ⅰ). Prefer the pattern used by neighbouring cards.
+- Do **not** create, rename, or delete labels. If none fit, ask — do not improvise a new taxonomy.
+
+## Ask first
+
+Do not invent a label taxonomy, rename or add lists, or restructure the board without asking.
