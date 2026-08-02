@@ -366,6 +366,71 @@ Do not add external sync sidecars.
 
 **Three workspaces, and only three:** `apps/api` (Hono + Drizzle), `apps/app` (Expo + Expo Router), and `packages/shared` (Zod schemas, sync types, geometry helpers) — anything both sides must agree on lives in `shared` so it cannot drift. Directory conventions are in `AGENTS.md`.
 
+### Repository layout
+
+Planned target, not yet scaffolded. Routes under `apps/app/app/` are listed in [§8](#8-client) rather than repeated here.
+
+```text
+locus/
+  apps/
+    api/
+      src/
+        index.ts               # Hono app + server bootstrap
+        env.ts                 # Zod-validated process.env; fail fast on bad config
+        db/
+          schema.ts            # Drizzle pg-core tables — single source of truth
+          client.ts            # PGlite or node-postgres, selected by DATABASE_URL
+          migrate.ts           # startup migrations behind an advisory lock
+        routes/                # auth · areas · places · points · collections
+                               # tags · notes · comments · photos
+                               # shares · invites · publicLinks
+                               # media · sync · public (GET /p/:token + OG shell)
+        services/
+          permissions.ts       # can() — the only ACL implementation anywhere
+          syncApply.ts         # shared by REST writes and /sync/push
+          changeLog.ts         # server_seq watermark, compaction
+          mediaStorage.ts      # content-addressed writes + derivatives
+          markdown.ts          # server-side sanitiser for public pages
+          mailer.ts · notifier.ts
+        ws/live.ts             # change hints only; in-process fan-out
+      drizzle/                 # generated migrations — never hand-edited once shipped
+      test/
+      Dockerfile · drizzle.config.ts · package.json
+    app/
+      app/                     # Expo Router routes (§8) — the doubled name is Expo's convention
+      src/
+        db/                    # WatermelonDB schema, models, local migrations
+        sync/                  # synchronize() driver, outbox, photo upload queue
+        map/                   # MapLibre wrappers; *.native.tsx / *.web.tsx splits
+        features/              # screen composition by domain
+        ui/                    # shared primitives
+        i18n/                  # string catalogue
+      assets/                  # user-supplied only — never agent-generated
+      app.config.ts · package.json
+  packages/
+    shared/
+      src/
+        schemas/               # Zod: entities, sync wire contract, API payloads
+        permissions/           # matrix fixture + predicates
+        geometry/              # Turf: bbox, point-in-polygon, simplify, distance
+        types/
+      package.json
+  deploy/
+    docker-compose.yml · docker-compose.postgres.yml · .env.example
+  .github/workflows/ci.yml     # typecheck · lint · test · licence gate
+  .cursor/rules/
+  package.json · pnpm-workspace.yaml · tsconfig.base.json
+  DESIGN.md · AGENTS.md · README.md · ATTRIBUTION.md · LICENSE
+```
+
+Three placements are load-bearing rather than stylistic:
+
+- **`shared/geometry`** holds distance and containment because Home ordering (client) and pull filtering (server) must agree to the metre. Two implementations would drift silently.
+- **`shared/permissions`** exports the [§4](#4-domain-model) matrix as data, so `can()` and the API tests read one table.
+- **`api/services/syncApply.ts`** is imported by the domain routes, not parallel to them — that is what keeps ChangeLog consistent.
+
+No `utils/` or `helpers/` catch-alls: a module that cannot be named after what it does belongs somewhere else.
+
 ### Why these, briefly
 
 - **Postgres only** avoids maintaining two Drizzle schemas and two migration sets; PGlite keeps the "no external database" story for simple deployments.

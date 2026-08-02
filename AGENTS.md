@@ -36,31 +36,13 @@ A fact belongs in exactly one of these. If you need it in a second place, link t
 
 ## 2. Repository layout
 
-```text
-locus/
-  apps/
-    api/                 # Hono + Drizzle (Docker)
-    app/                 # Expo + Expo Router
-  packages/
-    shared/              # Zod schemas, sync types, permission fixture, Turf geometry helpers
-  deploy/
-  DESIGN.md
-  AGENTS.md
-  README.md
-  ATTRIBUTION.md
-```
+Three workspaces and only three: `apps/api`, `apps/app`, `packages/shared`.
 
-```text
-apps/api/src/
-  index.ts
-  env.ts
-  db/schema.ts
-  routes/                # auth, areas, places, points, collections, shares, publicLinks, media, sync, p
-  services/              # permissions, syncApply, mediaStorage, mailer
-  ws/live.ts
-```
+The full planned tree is in **DESIGN §6 → Repository layout**, and the client route tree in **DESIGN §8**. Both are authoritative; do not maintain a second copy here or invent a parallel structure.
 
-The client route tree is part of the product surface and is specified in DESIGN §8.
+- Adding a top-level directory or a fourth workspace is a design change, not a refactor.
+- No `utils/` or `helpers/` catch-alls. A module that cannot be named after what it does belongs somewhere else.
+- `apps/app/assets/` holds user-supplied assets only.
 
 Anything both the API and the client must agree on — schemas, sync types, geometry maths, the permission fixture — goes in `packages/shared` so the two cannot drift.
 
