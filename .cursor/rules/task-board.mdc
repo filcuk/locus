@@ -21,8 +21,8 @@ Someone glancing at the board must be able to tell what is finished, what is mov
 
 | List | Meaning |
 |---|---|
-| Backlog | Known, not scheduled |
-| Planned | Scoped and agreed, next up |
+| Backlog | Known, not scheduled / not next — later phases, roadmap extras, and phase-gated decisions that do not block the immediate next queue |
+| Planned | Scoped and **next up** only (near-term queue — e.g. current phase layers about to start). Keep lean; do not park entire later phases (P2–P7) here |
 | Ongoing | Being worked on right now — every card an agent is actively implementing belongs here |
 | Testing | Code done, awaiting review, verification, or merge |
 | Hold | Blocked — a comment says by what, and who can unblock it |
