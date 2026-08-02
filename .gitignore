@@ -22,6 +22,7 @@ apps/app/ios/
 
 # Local instance data: PGlite database and uploaded media
 /data/
+.data/
 
 # Test and coverage output
 coverage/

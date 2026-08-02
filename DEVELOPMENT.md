@@ -14,7 +14,7 @@ Product rules and stack choices live in [`DESIGN.md`](./DESIGN.md). Conventions,
 | **pnpm** | `11.18.0` (`packageManager` field). Enable via Corepack: `corepack enable` |
 | **Android SDK** (for native) | Install Android Studio / SDK. Set **both** `ANDROID_HOME` and `ANDROID_SDK_ROOT` to the **same real SDK root** (the directory that contains `platform-tools`, not a parent shortcuts folder) |
 | **JDK** | Required by Gradle when building the Android app (Android Studio’s bundled JDK is fine) |
-| **Docker** (optional) | Only if you prefer Compose over `pnpm --filter api dev` |
+| **Docker** (optional) | Only if you prefer Compose over `pnpm dev` / `pnpm dev:api` |
 | **Windows firewall** | First time Metro / Expo / adb listen on a port, Windows may prompt — **approve manually**; a silent block looks like a hung start |
 
 From the repo root:
@@ -25,24 +25,56 @@ pnpm install
 
 ---
 
-## API (local or Compose)
+## Run locally (API + Expo web)
 
-Env keys and defaults are documented in [`deploy/.env.example`](./deploy/.env.example) and DESIGN §7 / §9. The API fails fast if required vars are missing (`SECRET_KEY`, `MEDIA_ROOT`).
-
-### Local process (PGlite by default)
-
-Omit `DATABASE_URL` to use embedded PGlite. From the repo root (PowerShell):
+Primary path — one command from the repo root starts the API (with local env defaults) and Expo web in parallel:
 
 ```powershell
-$env:SECRET_KEY = "dev-secret"
-$env:MEDIA_ROOT = "$PWD\.data\media"
-New-Item -ItemType Directory -Force -Path $env:MEDIA_ROOT | Out-Null
-pnpm --filter api dev
+pnpm dev
 ```
 
-- Listens on **port 8000** by default (`PORT`).
-- Health: `GET http://localhost:8000/health` (and related routes under the Hono app).
-- Point the client at this origin via the in-app server URL (never hardcode an instance — see AGENTS §4).
+| Piece | How |
+|-------|-----|
+| **API** | `@locus/api` `dev` → `scripts/dev-api.mjs` sets `SECRET_KEY` / `MEDIA_ROOT` if unset, creates `.data/media`, then `tsx watch` |
+| **Expo web** | `@locus/app` `dev` → `expo start --web` (same as `web`) |
+
+Uses `pnpm --parallel` across those two workspace packages — no extra process runner.
+
+- API listens on **port 8000** by default (`PORT`). Health: `GET http://localhost:8000/health`.
+- Expo prints a Metro URL (often `http://localhost:8081`).
+- `SECRET_KEY` defaulted by the script is **local-only** (`dev-secret-local-only`) — never use it in production or Compose deploys.
+- Omit `DATABASE_URL` so the API uses embedded PGlite (data beside `.data/media`).
+- Point the client at the API origin via the in-app server URL (never hardcode an instance — see AGENTS §4).
+- First listen may trigger a **Windows Firewall** prompt for Node — approve for private networks or the start looks hung.
+
+Individual halves: `pnpm dev:api` or `pnpm dev:web`.
+
+---
+
+## API (manual or Compose)
+
+Env keys and defaults are documented in [`deploy/.env.example`](./deploy/.env.example) and DESIGN §7 / §9. The API fails fast if required vars are missing (`SECRET_KEY`, `MEDIA_ROOT`). Prefer [`pnpm dev`](#run-locally-api--expo-web) above when you want the client too.
+
+### Local process only (two-terminal fallback)
+
+`pnpm --filter api dev` already applies the local env defaults via `scripts/dev-api.mjs`. Use separate terminals when you do not want `pnpm dev`:
+
+```powershell
+# terminal 1
+pnpm dev:api
+
+# terminal 2
+pnpm dev:web
+```
+
+To set env yourself (without the helper), omit `DATABASE_URL` for PGlite:
+
+```powershell
+$env:SECRET_KEY = "dev-secret-local-only"
+$env:MEDIA_ROOT = "$PWD\.data\media"
+New-Item -ItemType Directory -Force -Path $env:MEDIA_ROOT | Out-Null
+pnpm --filter api exec tsx watch src/index.ts
+```
 
 ### Docker Compose
 
@@ -65,12 +97,15 @@ Compose maps **8000:8000**. Data/media for the simple file live under the `locus
 
 ---
 
-## Expo web
+## Expo web (alone)
+
+Prefer [`pnpm dev`](#run-locally-api--expo-web) so the API is up too. To start only the client:
 
 Requires the app workspace with Expo scripts (`web`, `start`, `test:e2e` in `apps/app/package.json`). Use a branch that has the real client (e.g. after I1 / `chore/p0-integration`), not an early stub that only has `typecheck`.
 
 ```powershell
 pnpm --filter app web
+# same as: pnpm dev:web
 ```
 
 That runs `expo start --web`. Open the URL Metro prints (often `http://localhost:8081`).

@@ -9,6 +9,9 @@
     "node": ">=22"
   },
   "scripts": {
+    "dev": "pnpm --parallel --filter @locus/api --filter @locus/app run dev",
+    "dev:api": "pnpm --filter @locus/api run dev",
+    "dev:web": "pnpm --filter @locus/app run dev",
     "typecheck": "pnpm --recursive --if-present run typecheck",
     "lint": "eslint .",
     "test": "pnpm --recursive --if-present run test",
