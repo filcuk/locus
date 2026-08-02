@@ -18,6 +18,7 @@ const config: ExpoConfig = {
   plugins: [
     'expo-dev-client',
     'expo-router',
+    'expo-secure-store',
     '@maplibre/maplibre-react-native',
   ],
   experiments: {

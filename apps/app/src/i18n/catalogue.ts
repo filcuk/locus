@@ -11,11 +11,35 @@ export const catalogue = {
   'serverSetup.invalidUrl': 'Enter a valid http or https URL.',
 
   'auth.login.title': 'Sign in',
-  'auth.login.stub': 'Sign-in form arrives in P1.',
+  'auth.login.subtitle': 'Sign in to your Locus instance.',
+  'auth.login.submit': 'Sign in',
+  'auth.login.invalidCredentials': 'Email or password is incorrect.',
+  'auth.login.toRegister': 'Create an account',
+  'auth.login.toForgot': 'Forgot password?',
+
   'auth.register.title': 'Create account',
-  'auth.register.stub': 'Registration arrives in P1.',
+  'auth.register.subtitle': 'Register on your Locus instance.',
+  'auth.register.submit': 'Create account',
+  'auth.register.emailTaken': 'That email is already registered.',
+  'auth.register.validation': 'Check your details and try again.',
+  'auth.register.toLogin': 'Already have an account? Sign in',
+
   'auth.forgotPassword.title': 'Reset password',
-  'auth.forgotPassword.stub': 'Password reset arrives in P1.',
+  'auth.forgotPassword.subtitle':
+    'If an account exists for that email, a reset link will be sent.',
+  'auth.forgotPassword.submit': 'Send reset link',
+  'auth.forgotPassword.sent':
+    'If an account exists for that email, a reset link will be sent.',
+  'auth.forgotPassword.unavailable':
+    'Password reset is temporarily unavailable. Try again later.',
+  'auth.forgotPassword.toLogin': 'Back to sign in',
+
+  'auth.fields.email': 'Email',
+  'auth.fields.password': 'Password',
+  'auth.fields.displayName': 'Display name',
+
+  'auth.errors.generic': 'Something went wrong. Try again.',
+  'auth.errors.rateLimited': 'Too many attempts. Wait a moment and try again.',
 
   'home.title': 'Home',
   'home.entriesTab': 'Entries',

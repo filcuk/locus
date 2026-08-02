@@ -1,7 +1,7 @@
 import tseslint from 'typescript-eslint';
 
-const noFetchOutsideSync =
-  'Network I/O in apps/app belongs to the sync driver and photo upload queue under src/sync. Components read WatermelonDB observables instead (AGENTS §4).';
+const noFetchOutsideOwners =
+  'Network I/O in apps/app belongs to src/auth, src/sync, and the photo upload queue. Components read WatermelonDB observables instead (AGENTS §4).';
 
 export default tseslint.config(
   {
@@ -28,13 +28,20 @@ export default tseslint.config(
   },
   {
     files: ['apps/app/**/*.ts', 'apps/app/**/*.tsx'],
-    ignores: ['apps/app/src/sync/**'],
+    ignores: ['apps/app/src/sync/**', 'apps/app/src/auth/**'],
     rules: {
-      'no-restricted-globals': ['error', { name: 'fetch', message: noFetchOutsideSync }],
+      'no-restricted-globals': [
+        'error',
+        { name: 'fetch', message: noFetchOutsideOwners },
+      ],
       'no-restricted-properties': [
         'error',
-        { object: 'window', property: 'fetch', message: noFetchOutsideSync },
-        { object: 'globalThis', property: 'fetch', message: noFetchOutsideSync },
+        { object: 'window', property: 'fetch', message: noFetchOutsideOwners },
+        {
+          object: 'globalThis',
+          property: 'fetch',
+          message: noFetchOutsideOwners,
+        },
       ],
     },
   },

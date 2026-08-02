@@ -64,11 +64,11 @@ Anything both the API and the client must agree on — schemas, sync types, geom
 ## 4. Client conventions (Expo)
 
 - Requires a **development build** (`expo-dev-client`). Expo Go cannot load MapLibre or WatermelonDB, so "it runs in Expo Go" is not a signal.
-- Components read WatermelonDB observables. A component must never fetch — the sync driver and the photo upload queue own all network I/O, and lint enforces it.
+- Components read WatermelonDB observables. A component must never fetch — `src/auth`, the sync driver under `src/sync`, and the photo upload queue own all network I/O, and lint enforces it.
 - Split platform-divergent files with `*.native.tsx` / `*.web.tsx`, which is where MapLibre's two APIs are reconciled (`maplibre-gl` on web, `@maplibre/maplibre-react-native` on Android).
 - Polygon drawing: `terra-draw` / `mapbox-gl-draw` on web, custom gestures on native, shared geometry maths in `packages/shared`.
 - The server URL is user-configurable. Never hardcode an instance, in code, tests, or fixtures.
-- Never wipe local data on a 401. Token refresh must be single-flight or you get logout loops.
+- Never wipe local data on a 401. Token refresh must be single-flight or you get logout loops. Export `getAccessToken` / `getValidAccessToken` from `src/auth` for the sync driver; session clear drops tokens only.
 - Externalise user-facing strings by key from the start, even though the i18n library is unchosen.
 - E2E: **Maestro** for Android, **Playwright** for web.
 
@@ -87,7 +87,7 @@ Anything both the API and the client must agree on — schemas, sync types, geom
 These are what CI fails on, and they are a P0 deliverable — a convention nothing enforces is not a convention.
 
 - `tsc --noEmit` with `strict` and `noUncheckedIndexedAccess`.
-- Lint bans `any`, and bans `fetch` inside `apps/app` outside the sync driver.
+- Lint bans `any`, and bans `fetch` inside `apps/app` outside `src/auth` and `src/sync`.
 - The test suite, including DESIGN §4's permission matrix iterated as a fixture exported from `packages/shared`.
 - A licence checker against the allow-list in `.cursor/rules/licensing.mdc`.
 

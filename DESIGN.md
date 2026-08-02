@@ -318,7 +318,7 @@ Defined as Zod schemas in `packages/shared` and covered by a conformance suite t
 
 **Error codes:** `PULL_REQUIRED` (409), `CURSOR_TOO_OLD` (409, client restarts at `cursor=0`), `SCHEMA_VERSION_UNSUPPORTED` (426), `FORBIDDEN` (403), `VALIDATION_FAILED` (422).
 
-**`device_id`** is a UUID generated on first launch and stored beside the local database. It is per-install by design: a reinstall wipes local data and needs a full resync anyway, so a surviving id would carry no useful state.
+**`device_id`** is a UUID generated on first launch and stored with the session tokens in **`expo-secure-store`** on native (Keychain / Keystore) and **`localStorage`** on web. It is per-install by design: a reinstall wipes that store and needs a full resync anyway, so a surviving id would carry no useful state. Logout clears tokens only — not `device_id` and never WatermelonDB.
 
 ### Guarantees
 
@@ -629,7 +629,8 @@ P0 also carries two de-risking spikes, both cheap now and expensive later:
 | Auth | Hand-rolled JWT (`hono/jwt`) over the `Session` table with Argon2id via `node:crypto`, not a session library and not an npm argon2 package |
 | Argon2id implementation | Node built-in `crypto.argon2` / `argon2id` (requires Node ≥24.7); engines + Docker image track that floor |
 | Monorepo tooling | pnpm workspaces, no Turborepo |
-| `device_id` lifecycle | New UUID per install, stored beside the local database |
+| `device_id` lifecycle | New UUID per install, stored with session tokens in `expo-secure-store` (native) / `localStorage` (web) |
+| Client token storage | `expo-secure-store` for access + refresh tokens and `device_id` on native; `localStorage` web fallback (SecureStore has no web backend); single-flight refresh; 401 clears tokens only, never WatermelonDB |
 | Notes vs comments | Notes are a personal visit timeline, private to their author forever; comments are collaborative and follow the target's view permission |
 | Visits | A note with `visited_at`; private, so visit counts are per-viewer and derived on read |
 | Tags | Curated `system` set, plus `user`-scoped tags private to their owner |
