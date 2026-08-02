@@ -640,3 +640,4 @@ P0 also carries two de-risking spikes, both cheap now and expensive later:
 | Runtime | Node LTS in Docker |
 | Tiles | OpenFreeMap public instance as the default `MAP_STYLE_URL`, overridable per instance; never the OSMF tile service |
 | Licence allow-list tooling licences | `Python-2.0` and `BlueOak-1.0.0` are on the allow-list (transitive ESLint tree: `argparse`, `minimatch`); the gate still covers the full install tree |
+| Licence allow-list Expo transitive licences | `0BSD`, `CC-BY-4.0`, and `MPL-2.0` are on the allow-list (Expo/Metro tree: `tslib`, `jsc-safe-url`, `caniuse-lite`, `lightningcss`); the gate still covers the full install tree |
