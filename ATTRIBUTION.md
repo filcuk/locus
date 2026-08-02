@@ -26,8 +26,24 @@ Add a row when a dependency, asset, or data source is added; remove it when it g
 | `@electric-sql/pglite` | npm | Apache-2.0 | Embedded Postgres for simple/dev deploys |
 | `pg` | npm | MIT | node-postgres driver for external Postgres |
 | `tsx` | npm | MIT | TypeScript execution for API `dev` / `start` |
+| `expo` | npm | MIT | Expo SDK — client runtime and tooling |
+| `expo-router` | npm | MIT | File-based navigation (DESIGN §8 route tree) |
+| `expo-dev-client` | npm | MIT | Development builds (Expo Go cannot load native modules) |
+| `expo-constants` | npm | MIT | App config access for Expo Router |
+| `expo-linking` | npm | MIT | Deep linking for Expo Router |
+| `expo-status-bar` | npm | MIT | Status bar styling |
+| `react` | npm | MIT | UI library |
+| `react-dom` | npm | MIT | React DOM renderer for web |
+| `react-native` | npm | MIT | Native UI primitives |
+| `react-native-web` | npm | MIT | React Native primitives on web |
+| `react-native-safe-area-context` | npm | MIT | Safe area insets (Expo Router peer) |
+| `react-native-screens` | npm | MIT | Native navigation screens (Expo Router peer) |
+| `react-native-gesture-handler` | npm | MIT | Gesture system (Expo Router peer) |
+| `react-native-reanimated` | npm | MIT | Animations (Expo Router peer) |
+| `react-native-worklets` | npm | MIT | Worklets runtime peer of Reanimated |
+| `playwright` / `@playwright/test` | npm | Apache-2.0 | Web smoke tests for the Expo web target |
 
-Planned, pending install and licence verification: Expo / Expo Router, React Native, WatermelonDB, MapLibre GL JS, MapLibre React Native.
+Planned, pending install and licence verification: WatermelonDB, MapLibre GL JS, MapLibre React Native.
 
 ## Assets
 
