@@ -12,7 +12,7 @@ Human-facing overview: [`README.md`](./README.md) (keep short; put deep guidance
 
 **Locus** is an offline-first app for geographic **areas**, **places**, and **points** (POIs/features), plus **collections**, notes, tags, comments, and photos—with sharing and public links.
 
-**Containment:** Point → optional Place → optional Area. Collections organize any of these. All levels are viewable, savable, and shareable.
+**Containment:** Point → optional Place **or** Area (at most one); Place → optional Area. Collections organize any of these. All levels are viewable, savable, and shareable.
 
 **Platforms:** Android + Web first; iOS only if cheap later.  
 **Stack:** TypeScript monorepo — **Hono** API + **Expo** / **Expo Router** client + **Drizzle** (Postgres) + **WatermelonDB** local store + **MapLibre**.  
@@ -201,6 +201,7 @@ pnpm licences                               # allow-list check
 - Do not introduce FastAPI, Fastify, Flutter, or Capacitor-only as the primary stack.
 - Do not add PowerSync, Electric, Couch, or other sync sidecars.
 - Do not add a server-side SQLite path or a second Drizzle dialect.
+- Do not bundle a notification service (Apprise or otherwise). We POST to an operator-supplied webhook; that is the whole feature.
 - Do not build network-first with cache-as-afterthought.
 - Do not require always-on sockets for normal use.
 - Do not point any environment at public OSM tile servers.

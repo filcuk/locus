@@ -11,13 +11,14 @@
 
 ```text
 Area  (optional parent)
- └── Place  (standalone or inside an area)
-      └── Point / POI / feature  (standalone or inside a place)
+ ├── Place  (standalone or inside an area)
+ │    └── Point / POI / feature  (standalone, in a place, or directly in an area)
+ └── Point / POI / feature       (directly in an area, no intervening place)
 
 Collection  (organizational; members may be areas, places, and/or points)
 ```
 
-- A **point** may be standalone or belong to a **place**.
+- A **point** may be standalone, belong to a **place**, or belong directly to an **area**.
 - A **place** may be standalone or belong to an **area**.
 - **Collections** organize items; they are not required to view, save, or share.
 
@@ -68,7 +69,7 @@ Collection  (organizational; members may be areas, places, and/or points)
 
 1. Choose server (self-hosted URL), sign up / sign in / sign out; session survives restart and long offline periods.
 2. Create a **point** (map long-press, manual coords, or current GPS)—standalone or under a place—offline.
-3. Create a **place** / **area**; nest points → places → areas; optionally add to **collections**.
+3. Create a **place** / **area**; nest points into places or straight into areas, and places into areas; optionally add to **collections**.
 4. Notes, tags, comments, photos on features.
 5. Share an item with another user on the instance; or create a **public GUID link** (anonymous read-only).
 6. Sync modes: offline / power-saving / live.
@@ -85,10 +86,12 @@ Client-generated **UUIDv7** (or UUIDv4) primary keys for all user-owned entities
 
 | Entity | Standalone | Optional parent |
 |--------|------------|-----------------|
-| Point | Yes | Place |
+| Point | Yes | Place **or** Area — at most one |
 | Place | Yes | Area |
 | Area | Yes | — |
 | Collection | Yes | — (membership only) |
+
+A point carries `place_id` **or** `area_id`, never both — enforced by a database check constraint. When a point sits in a place that sits in an area, its membership of that area is transitive and derived; never denormalised onto the point, or re-parenting the place silently leaves the point pointing at the wrong area.
 
 ### Entities
 
@@ -109,7 +112,8 @@ Place
   visibility, created_at, updated_at, updated_by, deleted_at?
 
 Point
-  id, owner_id, place_id?, title, description?,
+  id, owner_id, place_id?, area_id?,     # at most one set; CHECK enforces it
+  title, description?,
   lat, lon, elevation_m?, position_source (manual|map|gps)?,
   feature_kind?, recorded_at?,
   visibility, created_at, updated_at, updated_by, deleted_at?
@@ -122,11 +126,16 @@ CollectionItem
   id, collection_id, item_type (area|place|point), item_id, position?,
   added_at, updated_at, deleted_at?      # tombstoned like every synced table
 
-Tag / Tagging          # tagging targets: area | place | point | collection
+Tag                    # scope=system → curated, global, read-only to users
+  id, scope (system|user), owner_id?, label, colour?, icon?
+  # scope=user → private to owner_id; invisible to everyone else, even on shared items
+Tagging                # targets: area | place | point | collection
 
-Note                   # personal visit timeline — private to its author, always
-  id, author_id, target_type, target_id, body?, visited_at,
+Note                   # personal timeline — private to its author, always
+  id, author_id, target_type, target_id, body?, visited_at?,
   created_at, updated_at, deleted_at?
+  # visited_at set ⇒ this note is a visit. Either body or visited_at must be present.
+  # "last visit" and "visit count" are derived per-viewer, never stored.
 
 Comment                # collaborative — visible to anyone who can view the target
   id, author_id, target_type, target_id, body,
@@ -168,15 +177,15 @@ Client tables mirror these plus WatermelonDB's own bookkeeping columns (`_status
 
 - **Source of truth:** GeoJSON Polygon/MultiPolygon; free-shape drawing on the map.
 - **Derived bbox** columns for viewport queries; never treat bbox as the true boundary.
-- Containment: point-in-polygon in TypeScript (Turf), with bbox as the SQL pre-filter.
+- Geometric containment (point-in-polygon in TypeScript via Turf, with bbox as the SQL pre-filter) answers "what falls inside this shape". It is **not** membership: a point belongs to an area only when `area_id` is set. A point may sit inside an area's polygon while belonging to nothing, and the map should not imply otherwise.
 - Validate rings; simplify (Douglas-Peucker) and cap vertices so sync payloads stay small.
 
 ### Sharing and ACL
 
 - Any area, place, point, or collection can be shared or publicly linked.
-- **Shares inherit downward:** a grant on a parent grants the same read access to its current children (place → its points; area → places and their points), and to collection members the viewer may access.
+- **Shares inherit downward:** a grant on a parent grants the same read access to its current children — place → its points; area → its places, those places' points, **and its direct points** — and to collection members the viewer may access.
 - **`visibility` governs anonymous/public exposure only** (confirmed). A child marked `private` is excluded from a parent's public or unlisted exposure, but remains visible to users holding an explicit share on the parent.
-- **Write:** `edit` on a place allows creating/editing points under that place; it never grants edit over children owned by someone else.
+- **Write:** `edit` on a place allows creating/editing points under that place, and `edit` on an area allows the same for its places and its direct points; neither grants edit over children owned by someone else.
 - Standalone point share does not expose siblings or the full parent tree.
 - Soft-delete via `deleted_at`; **cascade soft-delete** owned children when a parent is deleted, emitted as one cascade event rather than thousands of ops.
 - Anonymous public viewers: **read-only**.
@@ -200,7 +209,7 @@ Authoritative for `can(principal, action, resource)`. This table is the test fix
 **Resolution order** — evaluate in sequence, first match wins:
 
 1. **Soft-deleted ⇒ deny everyone.** `deleted_at` rows never appear in REST, pull, or public payloads.
-2. **Notes ⇒ author only.** A `Note` is invisible to every other principal regardless of shares, public links, or ownership of the target. No exceptions.
+2. **Notes and `user`-scoped tags ⇒ author/owner only.** A `Note`, and any `Tag` with `scope=user`, is invisible to every other principal regardless of shares, public links, or ownership of the target. No exceptions. Consequences to hold onto: visit counts differ per viewer, two people viewing one place see different tag chips, and tag filters return different results for each of them.
 3. **Owner ⇒ allow.** The resource's `owner_id` always wins.
 4. **Public link token ⇒ view only**, on the linked resource plus inherited children whose `visibility` is not `private`. A token never grants comment or write, and never traverses upward to parents or siblings.
 5. **Effective share = strongest grant** across the resource and all its ancestors (`edit` > `comment` > `view`). `visibility` does **not** reduce it — a `private` child of a shared parent is still visible to that share holder.
@@ -342,6 +351,8 @@ Do not add external sync sidecars.
 | Auth | Email + password; **hand-rolled JWT** access + refresh over the `Session` table; Argon2id |
 | Public links | GUID/UUID; Expo Router `p/[token]` with a server-rendered HTML shell for previews |
 | Media | Content-addressed files on the API container volume + generated derivatives |
+| Markdown | Descriptions only; sanitised **server-side** for public pages (library unchosen, §13) |
+| Notifications | Optional operator-supplied outbound webhook. We ship no notifier — see below |
 
 ```text
 locus/
@@ -360,6 +371,7 @@ Use `*.native.tsx` / `*.web.tsx` where MapLibre APIs diverge.
 - **Postgres only** avoids maintaining two Drizzle schemas and two migration sets; PGlite keeps the "no external database" story for simple deployments.
 - **WatermelonDB** supplies the local store, outbox, and per-column change tracking that we would otherwise hand-roll, and its web adapter avoids the COOP/COEP headers that SQLite-WASM would force on us (those headers conflict with third-party tiles and images).
 - **Operator-supplied tiles** because the public OSM tile service does not permit application-scale use.
+- **Notifications are a webhook we POST to, not a notifier we bundle.** Apprise is a Python library (BSD-2-Clause) and its REST wrapper `apprise-api` (MIT) is a sidecar container — either would put Python in our Node image or add a second service, both of which we have ruled out. An operator who already runs Apprise, ntfy, or anything webhook-shaped sets `NOTIFY_WEBHOOK_URL` and we post to it. Operators who set nothing get email via existing SMTP config, or nothing. Notifications are off by default and opt-in per user, since outbound calls leave the self-hosted boundary.
 - **Hand-rolled auth** because the offline model needs month-long refresh TTLs and device-bound sessions that also feed sync echo suppression. A session library would own the schema and fight both. The scope stays small — password hashing, token issue/refresh/revoke, reset — and password hashing itself uses a vetted Argon2id implementation, never a bespoke one.
 
 ---
@@ -386,6 +398,7 @@ apps/api/src/
 | `CORS_ORIGINS` | Web origins for this instance |
 | `PUBLIC_BASE_URL` | Link generation |
 | `SMTP_*` | Password reset, verification, invites |
+| `NOTIFY_WEBHOOK_URL` | Optional; Apprise-compatible / ntfy / raw webhook. Unset ⇒ no outbound notifications |
 
 API surface: auth (incl. password reset); domain CRUD; media upload/derivatives; shares, invites, public links; `GET /p/:token`; `GET /sync/pull`, `POST /sync/push`; live WebSocket. Domain writes and sync apply share one path so ChangeLog stays consistent. A single `can(principal, action, resource)` backs REST, sync, media, and WS subscribe.
 
@@ -406,17 +419,44 @@ Operational: run migrations at startup behind a lock; expose a healthcheck; run 
 ```text
 app/
   server-setup.tsx
-  (auth)/login.tsx
-  (auth)/register.tsx
+  (auth)/login.tsx · register.tsx · forgot-password.tsx
   (app)/_layout.tsx
-  (app)/index.tsx
-  (app)/areas/[id].tsx
-  (app)/places/[id].tsx
-  (app)/points/[id].tsx
+  (app)/index.tsx              # Home — map + hierarchical entry list
+  (app)/collections.tsx        # Home's second tab
+  (app)/map.tsx                # Full-screen map; area drawing lives here
+  (app)/new.tsx                # Type + parent picker
+  (app)/search.tsx
+  (app)/areas/[id].tsx · places/[id].tsx · points/[id].tsx
   (app)/collections/[id].tsx
-  (app)/settings.tsx
-  p/[token].tsx
+  (app)/[type]/[id]/share.tsx  # Access management: shares, links, revoke
+  (app)/settings/
+    index · profile · security · invites · tags
+    notifications · storage · sync · trash
+  p/[token].tsx                # Public read-only
 ```
+
+### Home
+
+Map across the top (current fix, entry pins, area polygons), hierarchical list below, FAB to add. Two tabs: entries and collections.
+
+**The list keeps the hierarchy and sorts roots by distance.** A child is never detached from its parent — you always see the containing area or place — so proximity reorders whole subtrees rather than promoting a lone nested point. An area's children are a mix of places and its own direct points, rendered at the same level.
+
+Distance of a row is the distance to the nearest thing it contains:
+
+- **Area:** `0` when the fix is inside the polygon, otherwise distance to the polygon edge. Containment gives "you are here" highlighting for free.
+- **Place / point:** its own coordinates.
+- **Any parent:** the minimum of its own distance and its descendants'.
+
+Children sort by the same rule inside their parent. With no location fix, fall back to most-recently-updated. Recompute on screen focus and on pull-to-refresh — v1 takes one-shot fixes only, so there is no continuous tracking and no geofencing before P7.
+
+### Entry screen
+
+Photo gallery header, then title and **markdown** description, tag chips, visit stats, the note/visit timeline, and comments. FAB offers edit, add visit, add comment, add photo.
+
+- **Notes and visits are one timeline.** A note with `visited_at` is a visit; without it, a plain note. Both are private to their author, so "last visit" and "visit count" are the viewer's own and are computed on read, never stored.
+- **Comments are the collaborative channel**, visible to anyone who can view the entry.
+- **Tags:** curated `system` set plus the viewer's own private tags. Never show another user's private tags.
+- **Markdown must be sanitised**, and on `p/[token]` it renders to anonymous visitors, so sanitisation happens server-side in the preview shell rather than only in the client renderer.
 
 **Polygon drawing** is a real workstream, not a library call: `terra-draw` or `mapbox-gl-draw` covers web, but MapLibre React Native has no draw tool, so native needs custom gestures over `ShapeSource`/`FillLayer`. Geometry maths lives in `packages/shared` so both platforms share one implementation.
 
@@ -468,12 +508,12 @@ Android specifics: the app requires a **development build**; self-hosters on pla
 | Phase | Deliverable |
 |-------|-------------|
 | **P0** | pnpm scaffold; Hono + Drizzle + PGlite; Expo dev build with WatermelonDB and a map; CI gates; sync contract and permission matrix in `packages/shared` |
-| **P1** | Auth (incl. server URL + reset) + points/places offline + pull/push sync |
-| **P2** | Areas with polygon draw, collections, tags, notes, comments |
+| **P1** | Auth (incl. server URL + reset) + points/places offline + pull/push sync; Home hierarchy with distance ordering; sync status indicator |
+| **P2** | Areas with polygon draw; collections tab; system + private tags; notes/visits timeline; comments; markdown descriptions; search |
 | **P3** | Photos: local capture, upload queue, derivatives, ACL |
-| **P4** | Shares, invites, public GUID links + server-rendered preview shell |
+| **P4** | Shares, invites, public GUID links + server-rendered preview shell; access-management screen; notification webhook |
 | **P5** | Live WebSocket collaboration |
-| **P6** | Hardening: late-grant backfill, revocation, compaction, conflicts, backups, export |
+| **P6** | Hardening: late-grant backfill, revocation, compaction, conflict inbox, trash/restore, backups, export |
 | **P7** | Breadcrumb tracks + high-volume sync; GPX |
 
 ### P0 must also deliver
@@ -499,7 +539,7 @@ Web is built first and is the agent-facing feedback loop: Playwright drives it a
 ## 12. Success criteria
 
 - GPS point in airplane mode: instant UI; syncs after reconnect.
-- Nest point → place → area; share any level; public GUID link is read-only and previews correctly when pasted into a chat app.
+- Nest point → place → area, and point → area directly; share any level; public GUID link is read-only and previews correctly when pasted into a chat app.
 - Photo offline → uploads later for entitled users, with thumbnails on lists.
 - Live collaborators see a tag within ~2 s; power-saving holds no socket.
 - Deploy remains one API container, with or without external Postgres.
@@ -525,6 +565,8 @@ Web is built first and is the agent-facing feedback loop: Playwright drives it a
 - **OTA updates:** self-hosted `expo-updates` or none.
 - **Polygon limits:** vertex cap and simplification tolerance. Needed before P2.
 - **i18n library:** unchosen; strings are externalised by key from the start regardless, so the choice stays cheap.
+- **Markdown library:** unchosen, and needs one renderer that works on native and web plus a server-side sanitiser for public pages. Needed before P2.
+- **Tagging a user in a comment.** The interaction is agreed; the permission story is not. A commenter often cannot grant access to a resource they do not own, so either only the owner may tag a user who lacks access, or the tag raises an access request the owner approves. Note also that tagging reveals a resource's existence to someone who cannot yet see it. Needed before P4.
 - **Public browse:** whether `public` visibility ever gets a discovery index (and the moderation that implies).
 
 ### Settled — do not reopen without a design change
@@ -536,4 +578,8 @@ Web is built first and is the agent-facing feedback loop: Playwright drives it a
 | Monorepo tooling | pnpm workspaces, no Turborepo |
 | `device_id` lifecycle | New UUID per install, stored beside the local database |
 | Notes vs comments | Notes are a personal visit timeline, private to their author forever; comments are collaborative and follow the target's view permission |
+| Visits | A note with `visited_at`; private, so visit counts are per-viewer and derived on read |
+| Tags | Curated `system` set, plus `user`-scoped tags private to their owner |
+| Home ordering | Hierarchy preserved; roots sorted by distance to their nearest descendant |
+| Notifications | Optional operator-supplied webhook; we bundle no notifier and add no container |
 | Runtime | Node LTS in Docker |
