@@ -4,8 +4,15 @@ packages:
 
 # pnpm blocks dependency build scripts unless allowed here. esbuild's
 # postinstall only unpacks its platform binary, which Vitest needs to run.
+# ssh2 / cpu-features / protobufjs are required by Testcontainers (A2).
 allowBuilds:
+  cpu-features: true
   esbuild: true
+  protobufjs: true
+  ssh2: true
 
 onlyBuiltDependencies:
+  - cpu-features
   - esbuild
+  - protobufjs
+  - ssh2

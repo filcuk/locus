@@ -8,6 +8,7 @@ import { createDb, type DbHandle } from './db/client.js';
 import { runMigrations } from './db/migrate.js';
 import { env, loadEnv } from './env.js';
 import { createHealthRoutes } from './routes/health.js';
+import { createSyncRoutes } from './routes/sync.js';
 
 export type AppVariables = {
   db: DbHandle['db'];
@@ -22,6 +23,7 @@ export function createApp(handle: DbHandle) {
   });
 
   app.route('/', createHealthRoutes(handle));
+  app.route('/', createSyncRoutes(handle));
 
   app.get('/', (c) =>
     c.json({
