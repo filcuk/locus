@@ -282,3 +282,19 @@ export const sessions = pgTable(
   },
   (t) => [index('sessions_user_idx').on(t.userId)],
 );
+
+/** Password-reset tokens — hashed at rest; short TTL (DESIGN §7 / §10). */
+export const passwordResetTokens = pgTable(
+  'password_reset_tokens',
+  {
+    id: uuid('id').primaryKey(),
+    userId: uuid('user_id')
+      .notNull()
+      .references(() => users.id),
+    tokenHash: text('token_hash').notNull(),
+    expiresAt: ts('expires_at').notNull(),
+    usedAt: ts('used_at'),
+    createdAt: ts('created_at').notNull(),
+  },
+  (t) => [index('password_reset_tokens_user_idx').on(t.userId)],
+);
