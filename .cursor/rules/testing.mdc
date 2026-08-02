@@ -1,0 +1,27 @@
+---
+description: What must be tested in Locus and with which tools
+globs: **/*.{test,spec}.{ts,tsx}
+alwaysApply: false
+---
+
+# Testing
+
+Vitest for unit and API tests (with Hono's test client), Testcontainers for a real Postgres, Playwright for web E2E, Maestro for Android E2E.
+
+## Required coverage before a feature is done
+
+- **Permissions:** every resource type against owner, shared user, public-link viewer, anonymous, and unauthorized. This is where private locations leak.
+- **Sync:** idempotent replay of the same push, late-grant backfill, revocation purge, and deterministic conflict ordering.
+- **Geometry:** bbox derivation and point-in-polygon, including multipolygons and holes.
+- **Offline paths:** a write made offline survives an app restart and syncs afterwards.
+
+## Style
+
+- Test behaviour through the public surface — a route or a service — not private internals.
+- Name tests after the behaviour, not the function under test.
+- Build data per test with factories; no shared mutable fixtures.
+- Assert on real outcomes; mock only at the network and filesystem boundary.
+
+## Never
+
+Never weaken or delete an assertion to make a suite pass. A failing test is either a real bug to fix or a question to ask.

@@ -1,0 +1,31 @@
+---
+description: DESIGN.md is authoritative; design changes must be proposed and reviewed
+alwaysApply: true
+---
+
+# Follow the design docs
+
+`DESIGN.md` is the specification and `AGENTS.md` is the conventions guide. Read the relevant sections before implementing, and build what they say — not a variation you consider better.
+
+## When the spec and reality disagree
+
+Stop and report. Do not pick a side silently.
+
+- **Code contradicts the docs** ⇒ the docs win. Flag the drift rather than quietly matching the code.
+- **The spec is incomplete for the task** ⇒ ask; a gap is not permission to improvise.
+- **The spec is technically impossible or would clearly defeat a stated goal** ⇒ propose a change, do not route around it.
+
+## Proposing a design change
+
+Bring it to the user before writing code, with:
+
+1. The section it affects and what it currently says.
+2. Why it blocks or harms a stated goal, with the concrete evidence that surfaced it.
+3. One or two options with trade-offs, and a recommendation.
+4. What else in the docs the change would ripple into.
+
+Then wait for review. A design change is never approved implicitly by a task instruction that happens to conflict with it.
+
+## After approval
+
+Update `DESIGN.md` (and `AGENTS.md` / `README.md` where affected) in the same change that implements it. Never edit a locked decision unilaterally, and never leave the docs describing a system we no longer build.

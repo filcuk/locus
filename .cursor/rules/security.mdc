@@ -1,0 +1,39 @@
+---
+description: Security practices for the Locus API, client, and deployment
+alwaysApply: true
+---
+
+# Security
+
+Locus is self-hosted and stores people's precise locations. Treat coordinates and photos as sensitive personal data.
+
+## Authorization
+
+- Every read and write goes through the single `can(principal, action, resource)` service. Never inline an ownership check in a route handler.
+- Filter at the query level for sync pulls and lists; never fetch-then-filter in JavaScript.
+- Public links are read-only, scoped to the linked resource and its inherited children.
+
+```ts
+// ❌ ad-hoc check; the next route will forget it
+if (place.ownerId !== user.id) return c.json({ error: 'forbidden' }, 403);
+
+// ✅ one policy, shared by REST, sync, media, and WebSocket
+await assertCan(principal, 'edit', place);
+```
+
+## Secrets and tokens
+
+- No secrets in git. New config goes to `.env.example` with a placeholder value.
+- Store public-link and refresh tokens **hashed**; the raw GUID lives only in the URL.
+- Never log tokens, passwords, or request bodies that contain them.
+
+## Input and output
+
+- Validate every body, param, and query with the Zod schema from `packages/shared`.
+- Use the Drizzle query builder; never build SQL by string concatenation.
+- Serve media only through the ACL-checked endpoint — no guessable public paths.
+- Set `Referrer-Policy: no-referrer` on public link pages so tokens do not leak to tile and image hosts.
+
+## When unsure
+
+A security question is a decision — ask rather than guessing at a safe-looking default.

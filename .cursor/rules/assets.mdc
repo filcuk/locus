@@ -1,0 +1,25 @@
+---
+description: Never generate or source visual assets; request them from the user
+alwaysApply: true
+---
+
+# Assets
+
+Do not create, generate, or download icons, logos, illustrations, photos, fonts, map styles, or app-store artwork.
+
+## Instead
+
+Ask the user to supply the asset, and say exactly what is needed: purpose, dimensions, format, and any light/dark or density variants.
+
+While waiting, use a placeholder that cannot be mistaken for final artwork — a plain shape, a glyph from an already-approved icon set, or a labelled empty box.
+
+## Never
+
+- Never generate an image and commit it.
+- Never pull an image or icon from the web because it "looks free".
+- Never reuse another project's or a competitor's assets.
+- Never invent brand marks, or present a colour palette as final.
+
+## Approved assets
+
+Once the user supplies or approves an asset set, it still needs a licence check and an `ATTRIBUTION.md` row before it ships.

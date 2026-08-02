@@ -1,0 +1,32 @@
+---
+description: Require explicit user approval for technology, architecture, and product decisions
+alwaysApply: true
+---
+
+# Decision making
+
+Locus's stack and product rules are recorded in `DESIGN.md`. Your job is to implement them, not to extend them.
+
+This rule covers choices the docs leave open. Deviating from something the docs *do* specify is covered by the design-docs rule.
+
+## Stop and ask before
+
+- Adding, removing, or swapping **any** dependency, framework, service, or container.
+- Changing the sync protocol, data model, ACL semantics, or public-link behaviour.
+- Resolving anything listed under `DESIGN.md` "Risks and open items".
+- Inventing user-visible behaviour the spec does not describe.
+- Working around a blocker by taking a different approach than the one specified.
+
+## How to ask
+
+State the options with trade-offs and a recommendation, then wait for an answer. Do not implement one "temporarily" while waiting, and do not bury the decision in a `TODO` comment.
+
+## Never
+
+- Never add a technology because it is convenient mid-task.
+- Never silently pick a default when the spec is ambiguous — ambiguity is a question, not a choice.
+- Never treat a previous conversation's suggestion as approval; approval is explicit.
+
+## After a decision
+
+Record it in `DESIGN.md` (and `AGENTS.md` if it changes conventions) in the same change that implements it, so the next session does not re-litigate it.

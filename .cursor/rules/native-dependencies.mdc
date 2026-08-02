@@ -1,0 +1,27 @@
+---
+description: Keep the native module footprint small in the Expo client
+globs: apps/app/**,**/package.json
+alwaysApply: false
+---
+
+# Native dependency footprint
+
+Every native module raises the cost of the project permanently: a new development build for each contributor, a possible web gap, extra Android permissions, and one more thing that can block an Expo SDK upgrade.
+
+## Order of preference
+
+1. Plain JavaScript or TypeScript.
+2. A module already in the Expo SDK (`expo-*`), which is versioned and upgraded with it.
+3. A community module with a working Expo config plugin.
+4. Custom native code — effectively a project-level decision, not a task-level one.
+
+## Before proposing any native module
+
+- Confirm it works on **web**, or state clearly what the web fallback is. Web is a first-class target, not a nice-to-have.
+- Check it supports the Expo SDK version in use and prebuild, not just bare React Native.
+- Check what it silently adds to `AndroidManifest.xml`; a surprise permission can affect distribution.
+- Check maintenance: recent releases, and an issue tracker that is not full of unanswered upgrade breakages.
+
+## Always
+
+Get user approval before adding it, verify the licence, and add the `ATTRIBUTION.md` row. Prefer one capable dependency over three overlapping small ones, and remove modules that a refactor left unused.

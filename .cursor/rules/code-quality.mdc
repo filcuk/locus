@@ -1,0 +1,43 @@
+---
+description: TypeScript code quality, reuse, and maintainability standards
+globs: **/*.{ts,tsx}
+alwaysApply: false
+---
+
+# Code quality
+
+## Types
+
+- Strict TypeScript. No `any`, no `!` to silence the compiler, no `@ts-ignore` without a comment naming the upstream cause.
+- Derive types from the Zod schemas in `packages/shared` with `z.infer` instead of redeclaring shapes.
+
+## Reuse
+
+- Domain rules, validation, and geometry maths live in `packages/shared` — never duplicated across `apps/api` and `apps/app`.
+- Extract on the **second** use, not the first. Premature abstraction is worse than duplication.
+- Search for an existing helper before writing a new one.
+
+## Structure
+
+- One responsibility per module; if describing a file needs "and", split it.
+- Keep the flow thin: route → validate → service → repository. Business logic belongs in services, not in route files or React components.
+- No unrelated refactors inside a feature change.
+
+## Errors
+
+```ts
+// ❌ swallows the cause and tells the user nothing
+try { await upload(); } catch { return null; }
+
+// ✅ preserved cause, actionable log, typed failure
+try {
+  await upload();
+} catch (cause) {
+  logger.error('photo upload failed', { photoId, cause });
+  throw new UploadError('Photo could not be uploaded', { cause });
+}
+```
+
+## Comments
+
+Explain *why*, never *what*. No commented-out code and no change narration — that is what git history is for.

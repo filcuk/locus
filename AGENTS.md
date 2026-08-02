@@ -27,6 +27,8 @@ Human-facing overview: [`README.md`](./README.md) (keep short; put deep guidance
 |----------|------|
 | `DESIGN.md` | Product rules, domain model, sync architecture, locked decisions, risks |
 | `AGENTS.md` | This file — conventions, workflows, agent behavior |
+| `.cursor/rules/` | Enforced guardrails: design adherence, decisions, security, privacy, licensing, attribution, assets, code quality, testing |
+| `ATTRIBUTION.md` | Third-party libraries, assets, and data we ship |
 | `README.md` | Short human intro |
 
 If code and DESIGN disagree, **stop and align docs or ask**.
@@ -52,6 +54,9 @@ Respect **DESIGN.md**. Do not add sync sidecars, change the database dialect, or
 13. **Email/password only**; **no** anonymous public comments; **self-host only** (the app must let users set the server URL).
 14. **Maps:** MapLibre with an operator-supplied style URL. Never point at public OSM tile servers; always show OSM attribution.
 15. **Do not** invent icons/images or use copyrighted assets without user approval.
+16. **Apache-2.0:** every dependency and asset must be licence-compatible, free to use, and listed in `ATTRIBUTION.md`.
+17. **No unilateral decisions:** new dependencies, schema changes, or unspecified behaviour need the user's approval first.
+18. **No telemetry or third-party egress.** No analytics, crash reporting, phone-home, or runtime CDN assets. The only outbound calls are to the operator's own server and their configured tile provider.
 
 ---
 
