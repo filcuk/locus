@@ -19,8 +19,15 @@ Add a row when a dependency, asset, or data source is added; remove it when it g
 | `@turf/simplify` | npm | MIT | Douglas–Peucker ring simplification |
 | `@turf/distance` | npm | MIT | Shared metre distances for ordering/filters |
 | `@turf/helpers` | npm | MIT | GeoJSON helpers used by the Turf wrappers |
+| `hono` | npm | MIT | API framework |
+| `@hono/node-server` | npm | MIT | Node HTTP adapter for Hono |
+| `drizzle-orm` | npm | Apache-2.0 | Postgres ORM (`pg-core`) |
+| `drizzle-kit` | npm | MIT | Drizzle migrations and schema tooling |
+| `@electric-sql/pglite` | npm | Apache-2.0 | Embedded Postgres for simple/dev deploys |
+| `pg` | npm | MIT | node-postgres driver for external Postgres |
+| `tsx` | npm | MIT | TypeScript execution for API `dev` / `start` |
 
-Planned, pending install and licence verification: Hono, Drizzle ORM, PGlite, Expo / Expo Router, React Native, WatermelonDB, MapLibre GL JS, MapLibre React Native.
+Planned, pending install and licence verification: Expo / Expo Router, React Native, WatermelonDB, MapLibre GL JS, MapLibre React Native.
 
 ## Assets
 
