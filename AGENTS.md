@@ -12,9 +12,10 @@ How to work in this repository: conventions, workflow, quality gates, and verifi
 |----------|------|-----------------|
 | `DESIGN.md` | Product rules, domain model, ACL, sync protocol, stack choices and their rationale, phases, risks, settled decisions | Conventions, commands, workflow |
 | `AGENTS.md` | This file — repo conventions, code organisation, CI gates, verification, agent workflow | Anything that decides *what* we build |
+| `DEVELOPMENT.md` | Local run and Android/web dev-build instructions for humans | Product rules, CI policy (link here instead) |
 | `.cursor/rules/` | Enforced guardrails, one concern per file: doc structure, design adherence, decisions, git workflow, task board, Planka notifications, security, privacy, licensing, attribution, assets, code quality, testing, i18n, API/data, offline-first client, native dependencies, [paths](.cursor/rules/paths.mdc) (workspace-relative tool/doc paths) | Long-form specification |
 | `ATTRIBUTION.md` | Every third-party library, asset, and data source we ship | — |
-| `README.md` | Short human-facing intro | Deep guidance — that belongs here or in DESIGN |
+| `README.md` | Short human-facing intro | Deep guidance — that belongs in DESIGN, AGENTS, or DEVELOPMENT |
 
 A fact belongs in exactly one of these. If you need it in a second place, link to the first instead of copying it — two copies drift, and the next agent cannot tell which one is current. `.cursor/rules/doc-structure.mdc` is the enforced version of this table.
 
