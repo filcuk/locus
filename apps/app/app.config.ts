@@ -15,7 +15,11 @@ const config: ExpoConfig = {
     bundler: 'metro',
     output: 'single',
   },
-  plugins: ['expo-dev-client', 'expo-router'],
+  plugins: [
+    'expo-dev-client',
+    'expo-router',
+    '@maplibre/maplibre-react-native',
+  ],
   experiments: {
     typedRoutes: true,
   },

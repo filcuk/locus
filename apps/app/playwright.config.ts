@@ -8,15 +8,16 @@ export default defineConfig({
   timeout: 120_000,
   expect: { timeout: 60_000 },
   fullyParallel: false,
+  workers: 1,
   retries: 0,
   use: {
     baseURL,
     trace: 'on-first-retry',
   },
   webServer: {
-    command: `pnpm exec expo start --web --port ${port}`,
+    command: `pnpm exec expo start --web --port ${port} --clear`,
     url: baseURL,
-    reuseExistingServer: !process.env['CI'],
-    timeout: 180_000,
+    reuseExistingServer: false,
+    timeout: 240_000,
   },
 });
