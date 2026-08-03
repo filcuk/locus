@@ -15,6 +15,9 @@ describe('Auth API against Postgres (Testcontainers)', () => {
     async sendPasswordReset(mail) {
       resetCapture.token = mail.resetToken;
     },
+    async sendInvite() {
+      /* unused in auth tests */
+    },
   };
 
   beforeAll(async () => {
