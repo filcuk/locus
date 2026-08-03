@@ -47,7 +47,8 @@ export function isSoftDeleted(deletedAt: string | null | undefined): boolean {
 }
 
 /**
- * Rule 2 — notes and user-scoped tags are author/owner only.
+ * Rule 2 — notes are author-only; user-scoped tags are catalog/assignment
+ * owner-only (display of taggings on a viewable target is a separate path).
  * Callers still enforce the author/owner id match.
  */
 export function isAuthorOnlyResource(

@@ -12,7 +12,7 @@ import {
 import { and, eq, gt, lte, ne, sql } from 'drizzle-orm';
 
 import type { DbHandle } from '../db/client.js';
-import { changeLog, collectionItems, comments, places } from '../db/schema.js';
+import { changeLog, collectionItems, comments, places, taggings } from '../db/schema.js';
 import { getReadableWatermark } from './changeLog.js';
 import { can, type Principal } from './permissions.js';
 
@@ -208,6 +208,31 @@ async function mayViewEntity(
     }
     case 'photos':
       return can(db, principal, 'view', { type: 'photo', id });
+    case 'tags':
+      return can(db, principal, 'view', { type: 'tag', id });
+    case 'taggings': {
+      const [row] = await db
+        .select({
+          targetType: taggings.targetType,
+          targetId: taggings.targetId,
+        })
+        .from(taggings)
+        .where(eq(taggings.id, id))
+        .limit(1);
+      if (!row) return false;
+      if (
+        row.targetType !== 'area' &&
+        row.targetType !== 'place' &&
+        row.targetType !== 'point' &&
+        row.targetType !== 'collection'
+      ) {
+        return false;
+      }
+      return can(db, principal, 'view', {
+        type: row.targetType,
+        id: row.targetId,
+      });
+    }
     default:
       return false;
   }

@@ -62,6 +62,8 @@ export type LoadedResource = {
   authorOnly: boolean;
   ancestorRefs: Array<{ type: 'area' | 'place' | 'point' | 'collection'; id: string }>;
   inPublicLinkScope: boolean;
+  /** Present when `type === 'tag'`. System tags are viewable by any authenticated user. */
+  tagScope?: 'system' | 'user';
 };
 
 export class ForbiddenError extends Error {
@@ -106,6 +108,11 @@ export function evaluateLoaded(
 ): boolean {
   const authenticated = principal.kind === 'user';
   const principalUserId = principal.kind === 'user' ? principal.userId : null;
+
+  // System tags: any authenticated user may view; writes are migration-only (DESIGN §4).
+  if (resource.type === 'tag' && resource.tagScope === 'system') {
+    return action === 'view' && principal.kind === 'user';
+  }
 
   const isOwner =
     principalUserId != null &&
@@ -237,11 +244,13 @@ async function loadResource(
         id: row.id,
         ownerId: row.ownerId,
         authorId: null,
+        // retired_at is soft-retire, not soft-delete (DESIGN §4 rule 1 note).
         deletedAt: null,
         visibility: null,
         authorOnly: isAuthorOnlyResource({ kind: 'tag', scope }),
         ancestorRefs: [],
         inPublicLinkScope: false,
+        tagScope: scope,
       };
     }
     case 'photo': {

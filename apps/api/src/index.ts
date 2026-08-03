@@ -19,6 +19,8 @@ import { createPlacesRoutes } from './routes/places.js';
 import { createPointsRoutes } from './routes/points.js';
 import { createSharesRoutes } from './routes/shares.js';
 import { createSyncRoutes } from './routes/sync.js';
+import { createTaggingsRoutes } from './routes/taggings.js';
+import { createTagsRoutes } from './routes/tags.js';
 import { createMailer, type Mailer } from './services/mailer.js';
 
 export type AppVariables = {
@@ -50,6 +52,8 @@ export function createApp(handle: DbHandle, options: CreateAppOptions = {}) {
   app.route('/', createPhotosRoutes(handle));
   app.route('/', createSharesRoutes(handle));
   app.route('/', createInvitesRoutes(handle, mailer));
+  app.route('/', createTagsRoutes(handle));
+  app.route('/', createTaggingsRoutes(handle));
   app.route('/', createSyncRoutes(handle));
 
   app.get('/', (c) =>

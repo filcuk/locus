@@ -121,9 +121,11 @@ export const TagSchema = z.object({
   id: UuidSchema,
   scope: TagScopeSchema,
   owner_id: UuidSchema.nullable().optional(),
+  namespace: z.string().min(1).nullable().optional(),
   label: z.string().min(1),
   colour: z.string().nullable().optional(),
   icon: z.string().nullable().optional(),
+  retired_at: IsoDateTimeSchema.nullable().optional(),
 });
 export type Tag = z.infer<typeof TagSchema>;
 
@@ -134,6 +136,11 @@ export const TaggingSchema = z.object({
   target_id: UuidSchema,
   created_at: IsoDateTimeSchema,
   deleted_at: IsoDateTimeSchema.nullable().optional(),
+  /** Denormalised from Tag at assign time (DESIGN §4 Tagging). */
+  tag_label: z.string().min(1),
+  tag_colour: z.string().nullable().optional(),
+  tag_scope: TagScopeSchema,
+  tag_namespace: z.string().min(1).nullable().optional(),
 });
 export type Tagging = z.infer<typeof TaggingSchema>;
 

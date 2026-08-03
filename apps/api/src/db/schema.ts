@@ -133,9 +133,13 @@ export const tags = pgTable('tags', {
   id: uuid('id').primaryKey(),
   scope: text('scope').notNull(),
   ownerId: uuid('owner_id').references(() => users.id),
+  /** System tags group by namespace (e.g. `type`, `terrain`); user tags leave null. */
+  namespace: text('namespace'),
   label: text('label').notNull(),
   colour: text('colour'),
   icon: text('icon'),
+  /** Soft-retire — still visible to owner; blocks new taggings. */
+  retiredAt: ts('retired_at'),
 });
 
 export const taggings = pgTable('taggings', {
@@ -147,6 +151,11 @@ export const taggings = pgTable('taggings', {
   targetId: uuid('target_id').notNull(),
   createdAt: ts('created_at').notNull(),
   deletedAt: ts('deleted_at'),
+  /** Copied from Tag at assign time for chip display without leaking Tag rows. */
+  tagLabel: text('tag_label').notNull(),
+  tagColour: text('tag_colour'),
+  tagScope: text('tag_scope').notNull(),
+  tagNamespace: text('tag_namespace'),
 });
 
 export const notes = pgTable('notes', {

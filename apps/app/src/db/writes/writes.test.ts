@@ -3,6 +3,7 @@ import LokiJSAdapter from '@nozbe/watermelondb/adapters/lokijs';
 import { describe, expect, it } from 'vitest';
 
 import { modelClasses } from '../models';
+import { migrations } from '../migrations';
 import { schema } from '../schema';
 import { createAreaLocal, softDeleteAreaLocal } from './areas';
 import {
@@ -30,6 +31,7 @@ const OWNER = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa';
 function memoryDatabase(): Database {
   const adapter = new LokiJSAdapter({
     schema,
+    migrations,
     useWebWorker: false,
     useIncrementalIndexedDB: false,
   });

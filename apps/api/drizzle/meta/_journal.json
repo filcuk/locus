@@ -15,6 +15,13 @@
       "when": 1785704317506,
       "tag": "0001_many_mordo",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1785780619274,
+      "tag": "0002_milky_phil_sheldon",
+      "breakpoints": true
     }
   ]
 }

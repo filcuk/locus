@@ -15,7 +15,7 @@ import { appSchema, tableSchema } from '@nozbe/watermelondb';
  * intentionally omitted from the local store.
  */
 export const schema = appSchema({
-  version: 1,
+  version: 2,
   tables: [
     tableSchema({
       name: 'users',
@@ -115,9 +115,11 @@ export const schema = appSchema({
       columns: [
         { name: 'scope', type: 'string' },
         { name: 'owner_id', type: 'string', isOptional: true, isIndexed: true },
+        { name: 'namespace', type: 'string', isOptional: true },
         { name: 'label', type: 'string' },
         { name: 'colour', type: 'string', isOptional: true },
         { name: 'icon', type: 'string', isOptional: true },
+        { name: 'retired_at', type: 'number', isOptional: true },
       ],
     }),
     tableSchema({
@@ -128,6 +130,11 @@ export const schema = appSchema({
         { name: 'target_id', type: 'string', isIndexed: true },
         { name: 'created_at', type: 'number' },
         { name: 'deleted_at', type: 'number', isOptional: true },
+        // Optional for schema v1→v2 migration; writers/sync always populate.
+        { name: 'tag_label', type: 'string', isOptional: true },
+        { name: 'tag_colour', type: 'string', isOptional: true },
+        { name: 'tag_scope', type: 'string', isOptional: true },
+        { name: 'tag_namespace', type: 'string', isOptional: true },
       ],
     }),
     tableSchema({

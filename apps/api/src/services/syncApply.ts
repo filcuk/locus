@@ -30,6 +30,12 @@ import {
   markNoteDeleted,
 } from './syncApplyNotesComments.js';
 import { applyPhoto, markPhotoDeleted } from './syncApplyPhotos.js';
+import {
+  applyTag,
+  applyTagging,
+  markTaggingDeleted,
+  retireTag,
+} from './syncApplyTags.js';
 
 export type ApplyContext = {
   db: DbHandle['db'];
@@ -112,6 +118,10 @@ async function applyOne(
         return await applyComment(ctx, op, raw);
       case 'photos':
         return await applyPhoto(ctx, op, raw);
+      case 'tags':
+        return await applyTag(ctx, op, raw);
+      case 'taggings':
+        return await applyTagging(ctx, op, raw);
       default:
         return {
           table,
@@ -230,6 +240,18 @@ async function applyDelete(
     }
     case 'photos': {
       const outcome = await markPhotoDeleted(ctx, id, now);
+      if (outcome !== 'ok') return outcome;
+      break;
+    }
+    case 'tags': {
+      // Soft-retire (no strip on sync delete — REST owns strip_from_all).
+      const outcome = await retireTag(ctx, id, now, false);
+      if (outcome !== 'ok') return outcome;
+      // ChangeLog already emitted inside retireTag.
+      return 'ok';
+    }
+    case 'taggings': {
+      const outcome = await markTaggingDeleted(ctx, id, now);
       if (outcome !== 'ok') return outcome;
       break;
     }

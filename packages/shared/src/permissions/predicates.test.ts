@@ -32,7 +32,7 @@ describe('permission predicates (DESIGN §4 resolution order)', () => {
     expect(allowsResolved(kind, 'view')).toBe(false);
   });
 
-  it('keeps notes and user tags author-only', () => {
+  it('keeps notes and user tags author-only for catalog ACL', () => {
     expect(isAuthorOnlyResource({ kind: 'note' })).toBe(true);
     expect(isAuthorOnlyResource({ kind: 'tag', scope: 'user' })).toBe(true);
     expect(isAuthorOnlyResource({ kind: 'tag', scope: 'system' })).toBe(false);
