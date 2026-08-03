@@ -361,7 +361,7 @@ Do not add external sync sidecars.
 | Auth | Email + password; **hand-rolled JWT** (`hono/jwt`) access + refresh over the `Session` table; Argon2id via `node:crypto` |
 | Public links | GUID/UUID; Expo Router `p/[token]` with a server-rendered HTML shell for previews |
 | Media | Content-addressed files on the API container volume + generated derivatives |
-| Markdown | Descriptions only; sanitised **server-side** for public pages (library unchosen, [§13](#13-risks-and-open-items)) |
+| Markdown | Descriptions only; sanitised **server-side** for public pages — stack in [§13 Settled](#13-risks-and-open-items) |
 | Notifications | Optional operator-supplied outbound webhook. We ship no notifier — see below |
 
 **Three workspaces, and only three:** `apps/api` (Hono + Drizzle), `apps/app` (Expo + Expo Router), and `packages/shared` (Zod schemas, sync types, geometry helpers) — anything both sides must agree on lives in `shared` so it cannot drift. Directory conventions are in `AGENTS.md`.
@@ -617,7 +617,6 @@ P0 also carries two de-risking spikes, both cheap now and expensive later:
 - **OTA updates:** self-hosted `expo-updates` or none.
 - **Polygon limits:** vertex cap and simplification tolerance. Needed before P2.
 - **i18n library:** unchosen; strings are externalised by key from the start regardless, so the choice stays cheap.
-- **Markdown library:** unchosen, and needs one renderer that works on native and web plus a server-side sanitiser for public pages. Needed before P2.
 - **Tagging a user in a comment.** The interaction is agreed; the permission story is not. A commenter often cannot grant access to a resource they do not own, so either only the owner may tag a user who lacks access, or the tag raises an access request the owner approves. Note also that tagging reveals a resource's existence to someone who cannot yet see it. Needed before P4.
 - **Public browse:** whether `public` visibility ever gets a discovery index (and the moderation that implies).
 
@@ -644,3 +643,4 @@ P0 also carries two de-risking spikes, both cheap now and expensive later:
 | Licence allow-list tooling licences | `Python-2.0` and `BlueOak-1.0.0` are on the allow-list (transitive ESLint tree: `argparse`, `minimatch`); the gate still covers the full install tree |
 | Licence allow-list Expo transitive licences | `0BSD`, `CC-BY-4.0`, and `MPL-2.0` are on the allow-list (Expo/Metro tree: `tslib`, `jsc-safe-url`, `caniuse-lite`, `lightningcss`); the gate still covers the full install tree |
 | Sync `timestamp` / cursor | Pull/push `timestamp` is the fully-committed `server_seq` watermark; the client stores it in WatermelonDB's `lastPulledAt` field without converting to wall time |
+| Markdown library | Client `react-native-marked`; server MD→HTML via `marked` (raw HTML off); sanitise with `sanitize-html`; share `marked` options from `packages/shared`. Rationale: one shared parser surface, small dependency footprint, and server-side sanitisation for public pages — npm install + `ATTRIBUTION.md` land with P2-E implementation |
