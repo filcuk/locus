@@ -11,11 +11,11 @@ import {
   type SyncFetch,
 } from '@locus/shared';
 
-import { getServerUrl } from '../config/server-url.js';
+import { getServerUrl } from '../config/server-url';
 import {
   resolveAccessToken,
   type AccessTokenGetter,
-} from './auth.js';
+} from './auth';
 
 export {
   SYNC_SCHEMA_VERSION,
@@ -27,8 +27,8 @@ export {
   type SyncFetch,
 } from '@locus/shared';
 
-export type { AccessTokenGetter } from './auth.js';
-export { SyncAuthError } from './auth.js';
+export type { AccessTokenGetter } from './auth';
+export { SyncAuthError } from './auth';
 
 /**
  * Placeholder principal for `@locus/shared` createSyncClient, which still types

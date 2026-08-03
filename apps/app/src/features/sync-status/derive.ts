@@ -1,4 +1,4 @@
-import type { SyncIndicatorState, SyncPhase } from './types.js';
+import type { SyncIndicatorState, SyncPhase } from './types';
 
 export type DeriveSyncStatusInput = {
   online: boolean;

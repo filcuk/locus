@@ -14,18 +14,18 @@ export {
   hasSession,
   readSession,
   type AuthFetch,
-} from './client.js';
+} from './client';
 
-export { getOrCreateDeviceId, clearDeviceIdForTests } from './deviceId.js';
+export { getOrCreateDeviceId, clearDeviceIdForTests } from './deviceId';
 
 export {
   createMemorySecureStorage,
   setSecureStorageForTests,
   type SecureStorage,
-} from './secureStorage.js';
+} from './secureStorage';
 
 export {
   persistSession,
   isAccessTokenFresh,
   type StoredSession,
-} from './session.js';
+} from './session';

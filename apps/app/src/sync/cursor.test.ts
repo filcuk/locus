@@ -4,7 +4,7 @@ import {
   EMPTY_WATERMARK_SENTINEL,
   toServerCursor,
   toWatermelonTimestamp,
-} from './cursor.js';
+} from './cursor';
 
 describe('server_seq ↔ lastPulledAt cursor mapping', () => {
   it('uses a positive sentinel for empty watermark 0', () => {

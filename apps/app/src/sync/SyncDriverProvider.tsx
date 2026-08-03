@@ -7,8 +7,8 @@ import { getValidAccessToken } from '@/auth';
 import {
   bindActiveSyncDriver,
   unbindActiveSyncDriver,
-} from './activeDriver.js';
-import { createPowerSavingDriver } from './powerSaving.js';
+} from './activeDriver';
+import { createPowerSavingDriver } from './powerSaving';
 
 /**
  * Starts the DESIGN §5 power-saving sync driver while the signed-in app shell

@@ -3,7 +3,7 @@
  * Defaults to the shared singleton; tests may rebind or call silenceSyncStatusHooks().
  */
 
-import { syncStatusController } from '../features/sync-status/controller.js';
+import { syncStatusController } from '../features/sync-status/controller';
 
 export type SyncStatusHooks = {
   beginSynchronize: () => void;

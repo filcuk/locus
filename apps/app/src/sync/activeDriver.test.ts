@@ -6,8 +6,8 @@ import {
   refreshSync,
   requestSyncPush,
   unbindActiveSyncDriver,
-} from './activeDriver.js';
-import type { PowerSavingDriver } from './powerSaving.js';
+} from './activeDriver';
+import type { PowerSavingDriver } from './powerSaving';
 
 function fakeDriver(
   overrides: Partial<PowerSavingDriver> = {},

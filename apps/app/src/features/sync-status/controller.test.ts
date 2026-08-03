@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 
-import { createSyncStatusController } from './controller.js';
+import { createSyncStatusController } from './controller';
 
 describe('syncStatusController', () => {
   it('tracks synchronize() lifecycle without wiping prior offline flags incorrectly', () => {

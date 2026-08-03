@@ -11,19 +11,19 @@ export {
   type SyncClient,
   type SyncClientOptions,
   type SyncFetch,
-} from './client.js';
+} from './client';
 
 export {
   EMPTY_WATERMARK_SENTINEL,
   toServerCursor,
   toWatermelonTimestamp,
-} from './cursor.js';
+} from './cursor';
 
 export {
   clearDeviceId,
   getDeviceId,
   setDeviceId,
-} from './deviceId.js';
+} from './deviceId';
 
 export {
   emptyWatermelonChanges,
@@ -32,7 +32,7 @@ export {
   rejectedIdsFromPush,
   watermelonChangesToPush,
   wireRowToRaw,
-} from './encode.js';
+} from './encode';
 
 export {
   DEFAULT_PULL_INTERVAL_MS,
@@ -40,16 +40,16 @@ export {
   createPowerSavingDriver,
   type PowerSavingDriver,
   type PowerSavingDriverOptions,
-} from './powerSaving.js';
+} from './powerSaving';
 
 export {
   bindActiveSyncDriver,
   refreshSync,
   requestSyncPush,
   unbindActiveSyncDriver,
-} from './activeDriver.js';
+} from './activeDriver';
 
-export { SyncDriverProvider } from './SyncDriverProvider.js';
+export { SyncDriverProvider } from './SyncDriverProvider';
 
 export {
   bindSyncStatusHooks,
@@ -57,6 +57,6 @@ export {
   silenceSyncStatusHooks,
   unbindSyncStatusHooks,
   type SyncStatusHooks,
-} from './status.js';
+} from './status';
 
-export { runSynchronize, type SynchronizeOptions } from './synchronize.js';
+export { runSynchronize, type SynchronizeOptions } from './synchronize';

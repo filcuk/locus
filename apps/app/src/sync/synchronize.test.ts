@@ -6,8 +6,8 @@ import {
   bindSyncStatusHooks,
   silenceSyncStatusHooks,
   type SyncStatusHooks,
-} from './status.js';
-import { runSynchronize } from './synchronize.js';
+} from './status';
+import { runSynchronize } from './synchronize';
 
 const DEVICE = 'd1d1d1d1-d1d1-41d1-81d1-d1d1d1d1d1d1';
 const TOKEN = 'token';

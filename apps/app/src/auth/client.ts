@@ -14,8 +14,8 @@ import {
   type RegisterRequest,
 } from '@locus/shared';
 
-import { getServerUrl } from '../config/server-url.js';
-import { getOrCreateDeviceId } from './deviceId.js';
+import { getServerUrl } from '../config/server-url';
+import { getOrCreateDeviceId } from './deviceId';
 import {
   clearSession,
   getAccessToken,
@@ -23,7 +23,7 @@ import {
   isAccessTokenFresh,
   persistSession,
   readSession,
-} from './session.js';
+} from './session';
 
 export type AuthFetch = (
   input: string,

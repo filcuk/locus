@@ -1,7 +1,7 @@
 import type { Database } from '@nozbe/watermelondb';
 import { describe, expect, it, vi } from 'vitest';
 
-import { createPowerSavingDriver } from './powerSaving.js';
+import { createPowerSavingDriver } from './powerSaving';
 
 function fakeDatabase(): Database {
   return {} as Database;

@@ -5,7 +5,7 @@
 
 import { newEntityId } from '@locus/shared';
 
-import { getSecureStorage } from './secureStorage.js';
+import { getSecureStorage } from './secureStorage';
 
 const DEVICE_ID_KEY = 'locus.deviceId';
 

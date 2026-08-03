@@ -2,7 +2,7 @@ import { StyleSheet, Text, View } from 'react-native';
 
 import { t, type MessageKey } from '@/i18n';
 
-import type { SyncIndicatorState } from './types.js';
+import type { SyncIndicatorState } from './types';
 
 const LABEL_KEY: Record<SyncIndicatorState, MessageKey> = {
   offline: 'syncStatus.offline',

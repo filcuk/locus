@@ -1,5 +1,5 @@
-import { deriveSyncIndicatorState } from './derive.js';
-import type { SyncPhase, SyncStatusSnapshot } from './types.js';
+import { deriveSyncIndicatorState } from './derive';
+import type { SyncPhase, SyncStatusSnapshot } from './types';
 
 type Listener = (snapshot: SyncStatusSnapshot) => void;
 

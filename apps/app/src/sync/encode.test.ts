@@ -6,7 +6,7 @@ import {
   rejectedIdsFromPush,
   watermelonChangesToPush,
   wireRowToRaw,
-} from './encode.js';
+} from './encode';
 
 const USER = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa';
 const PLACE = 'eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee';

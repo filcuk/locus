@@ -5,7 +5,7 @@ import {
   createMemorySecureStorage,
   getOrCreateDeviceId,
   setSecureStorageForTests,
-} from './index.js';
+} from './index';
 
 beforeEach(() => {
   setSecureStorageForTests(createMemorySecureStorage());
