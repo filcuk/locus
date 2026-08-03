@@ -200,9 +200,22 @@ async function applyDelete(
         .where(eq(collectionItems.id, id));
       break;
     }
-    case 'shares':
+    case 'shares': {
+      const [share] = await ctx.db.select().from(shares).where(eq(shares.id, id)).limit(1);
+      if (!share) {
+        return { table, id, code: 'VALIDATION_FAILED', message: 'share not found' };
+      }
+      try {
+        await assertCan(ctx.db, ctx.principal, 'manage_shares', {
+          type: share.resourceType as 'area' | 'place' | 'point' | 'collection',
+          id: share.resourceId,
+        });
+      } catch {
+        return { table, id, code: 'FORBIDDEN', message: 'Forbidden' };
+      }
       await ctx.db.delete(shares).where(eq(shares.id, id));
       break;
+    }
     case 'notes': {
       const outcome = await markNoteDeleted(ctx, id, now);
       if (outcome !== 'ok') return outcome;

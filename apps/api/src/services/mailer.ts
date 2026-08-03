@@ -7,8 +7,16 @@ export type PasswordResetMail = {
   resetUrl: string;
 };
 
+export type InviteMail = {
+  /** Recipient — never log this value. */
+  to: string;
+  inviteToken: string;
+  inviteUrl: string;
+};
+
 export type Mailer = {
   sendPasswordReset(mail: PasswordResetMail): Promise<void>;
+  sendInvite(mail: InviteMail): Promise<void>;
 };
 
 /**
@@ -25,6 +33,15 @@ export function createMailer(): Mailer {
           msg: 'password_reset_stub',
           smtp_configured: Boolean(env().SMTP_HOST),
           note: 'reset token not emailed; capture via injected mailer in tests',
+        }),
+      );
+    },
+    async sendInvite() {
+      console.log(
+        JSON.stringify({
+          msg: 'invite_stub',
+          smtp_configured: Boolean(env().SMTP_HOST),
+          note: 'invite token not emailed; capture via injected mailer in tests',
         }),
       );
     },
