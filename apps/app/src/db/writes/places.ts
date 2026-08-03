@@ -4,8 +4,10 @@
  */
 import { newEntityId, type Visibility } from '@locus/shared';
 import type { Database } from '@nozbe/watermelondb';
+import { Q } from '@nozbe/watermelondb';
 
 import Place from '../models/Place';
+import Point from '../models/Point';
 
 export type CreatePlaceLocalInput = {
   id?: string;
@@ -48,14 +50,29 @@ export async function createPlaceLocal(
   );
 }
 
+/**
+ * Soft-delete a place and cascade owned points locally (DESIGN §4).
+ */
 export async function softDeletePlaceLocal(
   database: Database,
   place: Place,
 ): Promise<void> {
+  const now = new Date();
   await database.write(async () => {
+    const ownedPoints = await database
+      .get<Point>('points')
+      .query(Q.where('place_id', place.id), Q.where('owner_id', place.ownerId))
+      .fetch();
+    for (const point of ownedPoints) {
+      if (point.deletedAt != null) continue;
+      await point.update((row) => {
+        row.deletedAt = now;
+        row.updatedAt = now;
+      });
+    }
     await place.update((row) => {
-      row.deletedAt = new Date();
-      row.updatedAt = new Date();
+      row.deletedAt = now;
+      row.updatedAt = now;
     });
   });
 }

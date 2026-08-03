@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import { newEntityId } from '../ids.js';
+import { AreaGeometrySchema } from './common.js';
 import { AreaSchema, NoteSchema, PointSchema } from './entities.js';
 
 const now = '2026-08-02T12:00:00.000Z';
@@ -34,6 +35,21 @@ describe('entity schemas (DESIGN §4)', () => {
       updated_by: owner,
     });
     expect(parsed.success).toBe(true);
+  });
+
+  it('rejects an unclosed polygon ring', () => {
+    const parsed = AreaGeometrySchema.safeParse({
+      type: 'Polygon',
+      coordinates: [
+        [
+          [0, 0],
+          [1, 0],
+          [1, 1],
+          [0, 1],
+        ],
+      ],
+    });
+    expect(parsed.success).toBe(false);
   });
 
   it('rejects a point that sets both place_id and area_id', () => {

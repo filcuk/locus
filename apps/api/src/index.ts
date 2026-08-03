@@ -7,6 +7,7 @@ import { Hono } from 'hono';
 import { createDb, type DbHandle } from './db/client.js';
 import { runMigrations } from './db/migrate.js';
 import { env, loadEnv } from './env.js';
+import { createAreasRoutes } from './routes/areas.js';
 import { createAuthRoutes } from './routes/auth.js';
 import { createHealthRoutes } from './routes/health.js';
 import { createPlacesRoutes } from './routes/places.js';
@@ -34,6 +35,7 @@ export function createApp(handle: DbHandle, options: CreateAppOptions = {}) {
 
   app.route('/', createHealthRoutes(handle));
   app.route('/', createAuthRoutes(handle, { mailer, now: options.now }));
+  app.route('/', createAreasRoutes(handle));
   app.route('/', createPlacesRoutes(handle));
   app.route('/', createPointsRoutes(handle));
   app.route('/', createSyncRoutes(handle));

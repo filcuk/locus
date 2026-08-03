@@ -1,15 +1,19 @@
 /**
  * Shared write path for REST domain writes and /sync/push (DESIGN §5 / §7).
- * Every successful apply emits exactly one ChangeLog row.
+ * Every successful apply emits exactly one ChangeLog row (cascade soft-deletes
+ * of owned children ride on that single parent delete event — DESIGN §4).
  */
 import {
   PlaceSchema,
   PointSchema,
   AreaSchema,
   ShareSchema,
+  bboxOf,
+  type AreaGeometry,
+  type CascadeSoftDeletePayload,
   type SyncedTable,
 } from '@locus/shared';
-import { eq } from 'drizzle-orm';
+import { and, eq, isNull } from 'drizzle-orm';
 
 import type { DbHandle } from '../db/client.js';
 import { areas, places, points, shares } from '../db/schema.js';
@@ -118,16 +122,27 @@ async function applyDelete(
   }
 
   const now = new Date().toISOString();
+  let cascadePayload: CascadeSoftDeletePayload | null = null;
+
   switch (table) {
-    case 'places':
-      await ctx.db.update(places).set({ deletedAt: now, updatedAt: now }).where(eq(places.id, id));
+    case 'places': {
+      const cascaded = await cascadeSoftDeleteOwnedPlaceChildren(ctx.db, id, now);
+      await ctx.db
+        .update(places)
+        .set({ deletedAt: now, updatedAt: now })
+        .where(eq(places.id, id));
+      cascadePayload = { cascaded: { places: [], points: cascaded.points } };
       break;
+    }
     case 'points':
       await ctx.db.update(points).set({ deletedAt: now, updatedAt: now }).where(eq(points.id, id));
       break;
-    case 'areas':
+    case 'areas': {
+      const cascaded = await cascadeSoftDeleteOwnedAreaChildren(ctx.db, id, now);
       await ctx.db.update(areas).set({ deletedAt: now, updatedAt: now }).where(eq(areas.id, id));
+      cascadePayload = { cascaded };
       break;
+    }
     case 'shares':
       await ctx.db.delete(shares).where(eq(shares.id, id));
       break;
@@ -140,15 +155,96 @@ async function applyDelete(
       };
   }
 
+  const hasCascade =
+    cascadePayload !== null &&
+    (cascadePayload.cascaded.places.length > 0 || cascadePayload.cascaded.points.length > 0);
+
   await appendChange(ctx.db, {
     entityType: table,
     entityId: id,
     op: 'delete',
-    payload: null,
+    payload: hasCascade ? cascadePayload : null,
     actorId: ctx.principal.userId,
     deviceId: ctx.deviceId,
   });
   return 'ok';
+}
+
+/**
+ * Soft-delete owned places under an area, and owned points under those places
+ * plus direct owned points on the area (DESIGN §4 cascade).
+ */
+async function cascadeSoftDeleteOwnedAreaChildren(
+  db: ApplyContext['db'],
+  areaId: string,
+  now: string,
+): Promise<{ places: string[]; points: string[] }> {
+  const [area] = await db.select().from(areas).where(eq(areas.id, areaId)).limit(1);
+  if (!area) return { places: [], points: [] };
+
+  const ownedPlaces = await db
+    .select({ id: places.id })
+    .from(places)
+    .where(
+      and(eq(places.areaId, areaId), eq(places.ownerId, area.ownerId), isNull(places.deletedAt)),
+    );
+
+  const placeIds: string[] = [];
+  const pointIds: string[] = [];
+
+  for (const place of ownedPlaces) {
+    placeIds.push(place.id);
+    const nested = await cascadeSoftDeleteOwnedPlaceChildren(db, place.id, now);
+    pointIds.push(...nested.points);
+    await db
+      .update(places)
+      .set({ deletedAt: now, updatedAt: now })
+      .where(eq(places.id, place.id));
+  }
+
+  const directPoints = await db
+    .select({ id: points.id })
+    .from(points)
+    .where(
+      and(eq(points.areaId, areaId), eq(points.ownerId, area.ownerId), isNull(points.deletedAt)),
+    );
+
+  for (const point of directPoints) {
+    pointIds.push(point.id);
+    await db
+      .update(points)
+      .set({ deletedAt: now, updatedAt: now })
+      .where(eq(points.id, point.id));
+  }
+
+  return { places: placeIds, points: pointIds };
+}
+
+/** Soft-delete owned points under a place (DESIGN §4 cascade). */
+async function cascadeSoftDeleteOwnedPlaceChildren(
+  db: ApplyContext['db'],
+  placeId: string,
+  now: string,
+): Promise<{ points: string[] }> {
+  const [place] = await db.select().from(places).where(eq(places.id, placeId)).limit(1);
+  if (!place) return { points: [] };
+
+  const ownedPoints = await db
+    .select({ id: points.id })
+    .from(points)
+    .where(
+      and(eq(points.placeId, placeId), eq(points.ownerId, place.ownerId), isNull(points.deletedAt)),
+    );
+
+  const pointIds: string[] = [];
+  for (const point of ownedPoints) {
+    pointIds.push(point.id);
+    await db
+      .update(points)
+      .set({ deletedAt: now, updatedAt: now })
+      .where(eq(points.id, point.id));
+  }
+  return { points: pointIds };
 }
 
 async function applyPlace(
@@ -327,17 +423,23 @@ async function applyArea(
     await assertCan(ctx.db, ctx.principal, 'edit', { type: 'area', id: row.id });
   }
 
+  // geom_geojson is source of truth; bbox is always derived on write (DESIGN §4).
+  // Vertex cap / simplify tolerance remain §13 open items (P2-B), so we do not
+  // rewrite rings here — only validate structure via AreaSchema and derive bbox.
+  const geom = row.geom_geojson as AreaGeometry;
+  const bbox = bboxOf(geom);
+
   const now = new Date().toISOString();
   const values = {
     id: row.id,
     ownerId: op === 'create' ? ctx.principal.userId : row.owner_id,
     title: row.title,
     description: row.description ?? null,
-    geomGeojson: row.geom_geojson,
-    bboxMinLat: row.bbox_min_lat,
-    bboxMinLon: row.bbox_min_lon,
-    bboxMaxLat: row.bbox_max_lat,
-    bboxMaxLon: row.bbox_max_lon,
+    geomGeojson: geom,
+    bboxMinLat: bbox.bbox_min_lat,
+    bboxMinLon: bbox.bbox_min_lon,
+    bboxMaxLat: bbox.bbox_max_lat,
+    bboxMaxLon: bbox.bbox_max_lon,
     visibility: row.visibility,
     createdAt: row.created_at,
     updatedAt: now,
