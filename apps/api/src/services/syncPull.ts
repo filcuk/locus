@@ -206,6 +206,8 @@ async function mayViewEntity(
         id: row.targetId,
       });
     }
+    case 'photos':
+      return can(db, principal, 'view', { type: 'photo', id });
     default:
       return false;
   }

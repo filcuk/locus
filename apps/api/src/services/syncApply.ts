@@ -27,6 +27,7 @@ import {
   markCommentDeleted,
   markNoteDeleted,
 } from './syncApplyNotesComments.js';
+import { applyPhoto, markPhotoDeleted } from './syncApplyPhotos.js';
 
 export type ApplyContext = {
   db: DbHandle['db'];
@@ -107,6 +108,8 @@ async function applyOne(
         return await applyNote(ctx, op, raw);
       case 'comments':
         return await applyComment(ctx, op, raw);
+      case 'photos':
+        return await applyPhoto(ctx, op, raw);
       default:
         return {
           table,
@@ -207,6 +210,11 @@ async function applyDelete(
     }
     case 'comments': {
       const outcome = await markCommentDeleted(ctx, id, now);
+      if (outcome !== 'ok') return outcome;
+      break;
+    }
+    case 'photos': {
+      const outcome = await markPhotoDeleted(ctx, id, now);
       if (outcome !== 'ok') return outcome;
       break;
     }

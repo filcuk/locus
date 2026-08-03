@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import { newEntityId } from '../ids.js';
 import { AreaGeometrySchema } from './common.js';
-import { AreaSchema, NoteSchema, PointSchema } from './entities.js';
+import { AreaSchema, NoteSchema, PhotoSchema, PointSchema } from './entities.js';
 
 const now = '2026-08-02T12:00:00.000Z';
 const owner = '018f0000-0000-7000-8000-000000000001';
@@ -107,5 +107,33 @@ describe('entity schemas (DESIGN §4)', () => {
       updated_at: now,
     });
     expect(parsed.success).toBe(true);
+  });
+
+  it('accepts photo metadata without storage bytes (ordering hard part 7)', () => {
+    const parsed = PhotoSchema.safeParse({
+      id: newEntityId(),
+      owner_id: owner,
+      target_type: 'place',
+      target_id: newEntityId(),
+      content_type: 'image/jpeg',
+      upload_state: 'local_only',
+      created_at: now,
+      updated_at: now,
+    });
+    expect(parsed.success).toBe(true);
+  });
+
+  it('rejects photo with unknown upload_state', () => {
+    const parsed = PhotoSchema.safeParse({
+      id: newEntityId(),
+      owner_id: owner,
+      target_type: 'place',
+      target_id: newEntityId(),
+      content_type: 'image/jpeg',
+      upload_state: 'processing',
+      created_at: now,
+      updated_at: now,
+    });
+    expect(parsed.success).toBe(false);
   });
 });

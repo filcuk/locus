@@ -2,3 +2,4 @@ export * from './auth.js';
 export * from './common.js';
 export * from './entities.js';
 export * from './sync.js';
+export * from './uploadState.js';
