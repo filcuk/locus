@@ -11,6 +11,7 @@ import {
   CollectionItemSchema,
   ShareSchema,
   bboxOf,
+  prepareAreaGeometry,
   type AreaGeometry,
   type CascadeSoftDeletePayload,
   type SyncedTable,
@@ -19,6 +20,7 @@ import { and, eq, isNull } from 'drizzle-orm';
 
 import type { DbHandle } from '../db/client.js';
 import { areas, collectionItems, collections, places, points, shares } from '../db/schema.js';
+import { env } from '../env.js';
 import { appendChange, type ChangeOp } from './changeLog.js';
 import { assertCan, ForbiddenError, type Principal } from './permissions.js';
 import {
@@ -498,9 +500,21 @@ async function applyArea(
   }
 
   // geom_geojson is source of truth; bbox is always derived on write (DESIGN §4).
-  // Vertex cap / simplify tolerance remain §13 open items (P2-B), so we do not
-  // rewrite rings here — only validate structure via AreaSchema and derive bbox.
-  const geom = row.geom_geojson as AreaGeometry;
+  // Simplify + per-ring vertex cap (DESIGN §4 / §7 env overrides).
+  const limits = env();
+  const prepared = prepareAreaGeometry(row.geom_geojson as AreaGeometry, {
+    maxVerticesPerRing: limits.POLYGON_MAX_VERTICES_PER_RING,
+    simplifyToleranceDeg: limits.POLYGON_SIMPLIFY_TOLERANCE_DEG,
+  });
+  if (!prepared.ok) {
+    return {
+      table: 'areas',
+      id: row.id,
+      code: 'VALIDATION_FAILED',
+      message: prepared.message,
+    };
+  }
+  const geom = prepared.geometry;
   const bbox = bboxOf(geom);
 
   const now = new Date().toISOString();
