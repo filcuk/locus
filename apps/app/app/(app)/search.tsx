@@ -1,5 +1,11 @@
 import { useState } from 'react';
-import { StyleSheet, Text, TextInput, View } from 'react-native';
+import {
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  View,
+} from 'react-native';
 
 import { SearchResultsList, useSearchResults } from '@/features/search';
 import { t } from '@/i18n';
@@ -24,7 +30,13 @@ export default function SearchScreen() {
         testID="search-input"
         accessibilityLabel={t('search.placeholder')}
       />
-      <SearchResultsList results={results} loading={loading} query={query} />
+      <ScrollView
+        style={styles.scroll}
+        contentContainerStyle={styles.scrollContent}
+        keyboardShouldPersistTaps="handled"
+      >
+        <SearchResultsList results={results} loading={loading} query={query} />
+      </ScrollView>
     </View>
   );
 }
@@ -51,5 +63,11 @@ const styles = StyleSheet.create({
     fontSize: 16,
     backgroundColor: '#fff',
     color: '#18181b',
+  },
+  scroll: {
+    flex: 1,
+  },
+  scrollContent: {
+    paddingBottom: 32,
   },
 });
