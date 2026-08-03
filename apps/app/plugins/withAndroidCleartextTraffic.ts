@@ -18,3 +18,5 @@ export const withAndroidCleartextTraffic: ConfigPlugin = (config) =>
     application.$['android:usesCleartextTraffic'] = 'true';
     return mod;
   });
+
+export default withAndroidCleartextTraffic;
