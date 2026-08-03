@@ -9,7 +9,7 @@ import {
   View,
 } from 'react-native';
 
-import { AuthHttpError, register } from '@/auth';
+import { messageForAuthError, register } from '@/auth';
 import { t } from '@/i18n';
 
 export default function RegisterScreen() {
@@ -31,19 +31,17 @@ export default function RegisterScreen() {
       });
       router.replace('/(app)');
     } catch (err) {
-      if (err instanceof AuthHttpError) {
-        if (err.code === 'email_taken') {
-          setError(t('auth.register.emailTaken'));
-        } else if (err.code === 'validation_failed') {
-          setError(t('auth.register.validation'));
-        } else if (err.code === 'rate_limited') {
-          setError(t('auth.errors.rateLimited'));
-        } else {
-          setError(t('auth.errors.generic'));
-        }
-      } else {
-        setError(t('auth.errors.generic'));
-      }
+      setError(
+        messageForAuthError(err, {
+          known: {
+            email_taken: t('auth.register.emailTaken'),
+            validation_failed: t('auth.register.validation'),
+            rate_limited: t('auth.errors.rateLimited'),
+          },
+          network: t('auth.errors.network'),
+          generic: t('auth.errors.generic'),
+        }),
+      );
     } finally {
       setBusy(false);
     }
@@ -62,6 +60,8 @@ export default function RegisterScreen() {
         onChangeText={setDisplayName}
         autoCapitalize="words"
         textContentType="name"
+        autoComplete="name"
+        placeholderTextColor="#a1a1aa"
         accessibilityLabel={t('auth.fields.displayName')}
       />
 
@@ -76,6 +76,7 @@ export default function RegisterScreen() {
         keyboardType="email-address"
         textContentType="emailAddress"
         autoComplete="email"
+        placeholderTextColor="#a1a1aa"
         accessibilityLabel={t('auth.fields.email')}
       />
 
@@ -88,6 +89,7 @@ export default function RegisterScreen() {
         secureTextEntry
         textContentType="newPassword"
         autoComplete="new-password"
+        placeholderTextColor="#a1a1aa"
         accessibilityLabel={t('auth.fields.password')}
       />
 
@@ -151,6 +153,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 10,
     fontSize: 16,
+    color: '#18181b',
     backgroundColor: '#ffffff',
   },
   error: {

@@ -39,6 +39,8 @@ export const catalogue = {
   'auth.fields.displayName': 'Display name',
 
   'auth.errors.generic': 'Something went wrong. Try again.',
+  'auth.errors.network':
+    'Could not reach the server. Check the URL and that the instance allows plain HTTP if you are not using HTTPS.',
   'auth.errors.rateLimited': 'Too many attempts. Wait a moment and try again.',
 
   'home.title': 'Home',

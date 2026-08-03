@@ -9,7 +9,7 @@ import {
   View,
 } from 'react-native';
 
-import { AuthHttpError, login } from '@/auth';
+import { messageForAuthError, login } from '@/auth';
 import { t } from '@/i18n';
 
 export default function LoginScreen() {
@@ -26,17 +26,16 @@ export default function LoginScreen() {
       await login({ email: email.trim(), password });
       router.replace('/(app)');
     } catch (err) {
-      if (err instanceof AuthHttpError) {
-        if (err.code === 'invalid_credentials') {
-          setError(t('auth.login.invalidCredentials'));
-        } else if (err.code === 'rate_limited') {
-          setError(t('auth.errors.rateLimited'));
-        } else {
-          setError(t('auth.errors.generic'));
-        }
-      } else {
-        setError(t('auth.errors.generic'));
-      }
+      setError(
+        messageForAuthError(err, {
+          known: {
+            invalid_credentials: t('auth.login.invalidCredentials'),
+            rate_limited: t('auth.errors.rateLimited'),
+          },
+          network: t('auth.errors.network'),
+          generic: t('auth.errors.generic'),
+        }),
+      );
     } finally {
       setBusy(false);
     }
@@ -58,6 +57,7 @@ export default function LoginScreen() {
         keyboardType="email-address"
         textContentType="emailAddress"
         autoComplete="email"
+        placeholderTextColor="#a1a1aa"
         accessibilityLabel={t('auth.fields.email')}
       />
 
@@ -70,6 +70,7 @@ export default function LoginScreen() {
         secureTextEntry
         textContentType="password"
         autoComplete="password"
+        placeholderTextColor="#a1a1aa"
         accessibilityLabel={t('auth.fields.password')}
       />
 
@@ -140,6 +141,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 10,
     fontSize: 16,
+    color: '#18181b',
     backgroundColor: '#ffffff',
   },
   error: {

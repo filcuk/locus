@@ -201,7 +201,7 @@ Repo-wide gates (typecheck, lint, tests, licences): see AGENTS §6.
 | Gradle / `expo run:android` cannot find the SDK | `ANDROID_HOME` or `ANDROID_SDK_ROOT` unset, mismatched, or pointing at Android Studio’s install root instead of the **SDK** directory |
 | `ninja: … build.ninja still dirty after 100 tries` (worklets/screens) | SDK CMake 3.22.1 ships Ninja **1.10**; use Ninja **1.12+** via a local `cmake.dir` copy or CMake 3.31+. Short path (`C:\l`) helps but is not sufficient alone. See Windows native build notes above. |
 | `lld: error: unknown argument: -z` during CMake link | `build-tools/*/lld.exe` on `PATH` shadowing NDK `ld.lld` — remove build-tools from `PATH` for the build shell |
-| App cannot reach `http://…` LAN / localhost API on device | Android blocks cleartext HTTP by default; self-hosted plain-HTTP URLs need an explicit cleartext allowance (DESIGN risks / Android notes) or use HTTPS |
+| App cannot reach `http://…` LAN / localhost API on device | Android blocks cleartext HTTP by default; `withAndroidCleartextTraffic` in `apps/app/app.config.ts` sets `android:usesCleartextTraffic` (requires a **new native build** after changing it). Or use HTTPS. |
 | `pnpm --filter app web` / missing `expo` scripts | Checked out a **stub** or pre-client tip (e.g. early `main` or a paths-only branch) — use a tip that includes the Expo app (post–I1 / `chore/p0-integration`) |
 | Metro / adb “does nothing” on Windows | Firewall denied the listen/connect prompt; approve for private networks |
 | “Works in Expo Go” | Irrelevant here — native modules will not load; use a dev build |

@@ -16,6 +16,8 @@ export {
   type AuthFetch,
 } from './client';
 
+export { messageForAuthError, safeServerMessage } from './authErrors';
+
 export { getOrCreateDeviceId, clearDeviceIdForTests } from './deviceId';
 
 export {
