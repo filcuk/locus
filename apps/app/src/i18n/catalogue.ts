@@ -51,6 +51,9 @@ export const catalogue = {
   'home.kind.area': 'Area',
   'home.kind.place': 'Place',
   'home.kind.point': 'Point',
+  /** OS permission copy — keep in sync with `expo-location` plugin in app.config.ts. */
+  'home.location.permissionReason':
+    'Locus uses your location once to sort nearby places on Home.',
 
   'collections.title': 'Collections',
   'collections.empty': 'No collections yet.',
