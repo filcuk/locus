@@ -35,16 +35,16 @@ function tokens(overrides?: Partial<{ access: string; refresh: string }>) {
 
 beforeEach(async () => {
   setSecureStorageForTests(createMemorySecureStorage());
-  setServerUrl('https://locus.example.com');
+  await setServerUrl('https://locus.example.com');
   setAuthFetchForTests(null);
   await clearSession();
   await clearDeviceIdForTests();
 });
 
-afterEach(() => {
+afterEach(async () => {
   setAuthFetchForTests(null);
+  await clearServerUrl();
   setSecureStorageForTests(null);
-  clearServerUrl();
 });
 
 describe('auth client', () => {

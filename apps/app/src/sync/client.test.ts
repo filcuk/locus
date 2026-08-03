@@ -10,8 +10,8 @@ const DEVICE = 'd1d1d1d1-d1d1-41d1-81d1-d1d1d1d1d1d1';
 const TOKEN = 'test-access-token';
 
 describe('createAppSyncClient', () => {
-  it('requires a configured server URL', () => {
-    clearServerUrl();
+  it('requires a configured server URL', async () => {
+    await clearServerUrl();
     expect(() =>
       createAppSyncClient({
         deviceId: DEVICE,
@@ -21,7 +21,7 @@ describe('createAppSyncClient', () => {
   });
 
   it('binds pull/push to the configured server URL with Bearer auth', async () => {
-    setServerUrl('https://locus.example');
+    await setServerUrl('https://locus.example');
     const fetchMock = vi.fn(async () =>
       Response.json({
         changes: emptySyncChanges(),
@@ -43,11 +43,11 @@ describe('createAppSyncClient', () => {
     expect(
       Object.keys(headers).some((k) => k.toLowerCase() === 'x-locus-user-id'),
     ).toBe(false);
-    clearServerUrl();
+    await clearServerUrl();
   });
 
   it('keeps legacy X-Locus-User-Id only when userId is provided', async () => {
-    setServerUrl('https://locus.example');
+    await setServerUrl('https://locus.example');
     const fetchMock = vi.fn(async () =>
       Response.json({ changes: emptySyncChanges(), timestamp: 1 }),
     );
@@ -63,7 +63,7 @@ describe('createAppSyncClient', () => {
     const headers = fetchMock.mock.calls[0]?.[1]?.headers ?? {};
     expect(headers.authorization).toBe(`Bearer ${TOKEN}`);
     expect(headers['x-locus-user-id']).toBe(USER);
-    clearServerUrl();
+    await clearServerUrl();
   });
 });
 

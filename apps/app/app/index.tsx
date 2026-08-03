@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react';
 import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
 
 import { hasSession } from '@/auth';
-import { hasServerUrl } from '@/config/server-url';
+import { hasServerUrl, hydrateServerUrl } from '@/config/server-url';
 import { t } from '@/i18n';
 
 /**
@@ -17,6 +17,7 @@ export default function Index() {
   useEffect(() => {
     let cancelled = false;
     void (async () => {
+      await hydrateServerUrl();
       if (!hasServerUrl()) {
         if (!cancelled) router.replace('/server-setup');
         return;
