@@ -136,9 +136,10 @@ CollectionItem
   id, collection_id, item_type (area|place|point), item_id, position?,
   added_at, updated_at, deleted_at?      # tombstoned like every synced table
 
-Tag                    # scope=system → curated, global, read-only to users
+Tag                    # scope=system → curated seed catalogue, global; users cannot mutate
   id, scope (system|user), owner_id?, label, colour?, icon?
-  # scope=user → private to owner_id; invisible to everyone else, even on shared items
+  # scope=user → owned by owner_id; others cannot use/find that tag on their own entries.
+  # Applied Tagging rows on a shared target are visible to viewers of that target (see rule 2).
 Tagging                # targets: area | place | point | collection
 
 Note                   # personal timeline — private to its author, always
@@ -219,7 +220,7 @@ Authoritative for `can(principal, action, resource)`. This table is the test fix
 **Resolution order** — evaluate in sequence, first match wins:
 
 1. **Soft-deleted ⇒ deny everyone.** `deleted_at` rows never appear in REST, pull, or public payloads.
-2. **Notes and `user`-scoped tags ⇒ author/owner only.** A `Note`, and any `Tag` with `scope=user`, is invisible to every other principal regardless of shares, public links, or ownership of the target. No exceptions. Consequences to hold onto: visit counts differ per viewer, two people viewing one place see different tag chips, and tag filters return different results for each of them.
+2. **Notes and `user`-scoped tag *definitions* ⇒ author/owner only.** A `Note`, and any `Tag` with `scope=user`, stays out of every other principal's catalogues, assign pickers, and tag filters — shares and public links do not expose the tag itself. **Applied tags are different:** a principal who can `view` a target also sees the tag chips applied to that target, including another user's private tags; they still cannot assign or rediscover those user tags on their own entries. Consequences: visit counts differ per viewer; shared entries may show foreign private-tag chips; each viewer's filter/picker still contains only system tags plus their own user tags.
 3. **Owner ⇒ allow.** The resource's `owner_id` always wins.
 4. **Public link token ⇒ view only**, on the linked resource plus inherited children whose `visibility` is not `private`. A token never grants comment or write, and never traverses upward to parents or siblings.
 5. **Effective share = strongest grant** across the resource and all its ancestors (`edit` > `comment` > `view`). `visibility` does **not** reduce it — a `private` child of a shared parent is still visible to that share holder.
@@ -517,7 +518,8 @@ Photo gallery header, then title and **markdown** description, tag chips, visit 
 
 - **Notes and visits are one timeline.** A note with `visited_at` is a visit; without it, a plain note. Both are private to their author, so "last visit" and "visit count" are the viewer's own and are computed on read, never stored.
 - **Comments are the collaborative channel**, visible to anyone who can view the entry.
-- **Tags:** curated `system` set plus the viewer's own private tags. Never show another user's private tags.
+- **@mentioning a user in a comment** is allowed for anyone who can comment. If the mentioned user lacks access to the target, the mention creates an **access request** the resource owner must approve before a share is granted — it does not grant access by itself. A mention may reveal that the resource exists to someone who cannot yet see it; that is accepted for this path (see [§13 Settled](#13-risks-and-open-items)).
+- **Tags:** curated `system` seed catalogue plus the viewer's own private tags. On a shared entry, applied tags (including another user's private tags) are visible as chips; those private tags cannot be assigned to the viewer's own entries or appear in their picker/filters.
 - **Markdown must be sanitised**, and on `p/[token]` it renders to anonymous visitors, so sanitisation happens server-side in the preview shell rather than only in the client renderer.
 
 **Polygon drawing** is a real workstream, not a library call: `terra-draw` or `mapbox-gl-draw` covers web, but MapLibre React Native has no draw tool, so native needs custom gestures over `ShapeSource`/`FillLayer`. Geometry maths lives in `packages/shared` so both platforms share one implementation.
@@ -619,7 +621,6 @@ P0 also carries two de-risking spikes, both cheap now and expensive later:
 - **OTA updates:** self-hosted `expo-updates` or none.
 - **Polygon limits:** vertex cap and simplification tolerance. Needed before P2.
 - **i18n library:** unchosen; strings are externalised by key from the start regardless, so the choice stays cheap.
-- **Tagging a user in a comment.** The interaction is agreed; the permission story is not. A commenter often cannot grant access to a resource they do not own, so either only the owner may tag a user who lacks access, or the tag raises an access request the owner approves. Note also that tagging reveals a resource's existence to someone who cannot yet see it. Needed before P4.
 - **Public browse:** whether `public` visibility ever gets a discovery index (and the moderation that implies).
 
 ### Settled — do not reopen without a design change
@@ -634,7 +635,7 @@ P0 also carries two de-risking spikes, both cheap now and expensive later:
 | Client token storage | `expo-secure-store` for access + refresh tokens and `device_id` on native; `localStorage` web fallback (SecureStore has no web backend); single-flight refresh; 401 clears tokens only, never WatermelonDB |
 | Notes vs comments | Notes are a personal visit timeline, private to their author forever; comments are collaborative and follow the target's view permission |
 | Visits | A note with `visited_at`; private, so visit counts are per-viewer and derived on read |
-| Tags | Curated `system` set, plus `user`-scoped tags private to their owner |
+| Tags (P2-D) | Curated `system` seed catalogue (random hex colours for now; icons later) with categories — **type:** monument \| view \| trail \| natural_feature; **terrain:** easy \| moderate \| hard \| impossible; **rurality:** urban \| suburban \| rural \| remote; **beauty:** unrefined \| plain \| moderate \| exquisite; **privacy:** bustling \| populated \| quiet \| secluded. Any non-anonymous user may **create** `user`-scoped tags (local to that user). Others cannot **use** (assign) another user's tags. Private tag *definitions* stay invisible in catalogues/pickers/filters; on an item **shared with them**, viewers **see** tags applied to that item but cannot use/find those user tags on their own entries. **Retire:** removed tags cannot be newly assigned but remain on old entries; on remove, offer a choice to strip the tag from all entries. (Maintainer chat 2026-08-03.) |
 | Home ordering | Hierarchy preserved; roots sorted by distance to their nearest descendant |
 | One-shot Home GPS | `expo-location` foreground-only for Home distance ordering; permission requested at use with a reason; no background or continuous tracking before P7 |
 | Notifications | Optional operator-supplied webhook; we bundle no notifier and add no container |
@@ -647,3 +648,4 @@ P0 also carries two de-risking spikes, both cheap now and expensive later:
 | Licence allow-list Expo transitive licences | `0BSD`, `CC-BY-4.0`, and `MPL-2.0` are on the allow-list (Expo/Metro tree: `tslib`, `jsc-safe-url`, `caniuse-lite`, `lightningcss`); the gate still covers the full install tree |
 | Sync `timestamp` / cursor | Pull/push `timestamp` is the fully-committed `server_seq` watermark; the client stores it in WatermelonDB's `lastPulledAt` field without converting to wall time |
 | Markdown library | Client `react-native-marked`; server MD→HTML via `marked` (raw HTML off); sanitise with `sanitize-html`; share `marked` options from `packages/shared`. Rationale: one shared parser surface, small dependency footprint, and server-side sanitisation for public pages — npm install + `ATTRIBUTION.md` land with P2-E implementation |
+| Tagging a user in a comment | Anyone who can comment may @mention. If the mentioned user lacks access, the mention creates an **access request** for the owner to approve (does not grant access by itself). A mention may reveal that the resource exists; that side effect is accepted. (Option B; chosen over owner-only tagging; confirmed maintainer chat 2026-08-03.) |
