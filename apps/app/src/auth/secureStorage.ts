@@ -1,10 +1,12 @@
 /**
  * Token / device_id persistence (DESIGN §13 settled: expo-secure-store).
- * Metro resolves `secureStorage.native.ts` / `secureStorage.web.ts`;
- * this file is the Vitest / tsc fallback (web + injectable memory).
+ *
+ * Platform backends live in `createPlatformSecureStorage.{native,web}.ts`.
+ * Do **not** name them `secureStorage.native.ts` — Metro would resolve
+ * `import './secureStorage'` to that file and drop `getSecureStorage`.
  */
 
-import { createPlatformSecureStorage } from './secureStorage.web';
+import { createPlatformSecureStorage } from './createPlatformSecureStorage';
 import type { SecureStorage } from './secureStorageTypes';
 
 export type { SecureStorage } from './secureStorageTypes';
