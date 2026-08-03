@@ -175,6 +175,8 @@ cd apps/app/android
 
 Prefer installing SDK **CMake 3.31+** (ships Ninja 1.12+) via SDK Manager when convenient; until AGP is pointed at it, the local `cmake.dir` + Ninja 1.12 copy above is enough. Do **not** change global pnpm `node-linker` without an explicit decision.
 
+**WSL2 (optional alternative):** If the Windows `C:\l` + Ninja 1.12 recipe still hits CMake/Ninja/lld or path-depth failures, build the Gradle/CMake/Ninja side under **WSL2** instead. That does **not** replace the Windows recipe above when it already works. Device install often still uses Windows `adb` (and `usbipd` for USB passthrough) — WSL2 mainly helps the native toolchain, not USB/`adb` by default.
+
 There is no automated native MapLibre check in CI — see the verification table below.
 
 ---
