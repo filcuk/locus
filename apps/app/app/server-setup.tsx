@@ -22,9 +22,11 @@ export default function ServerSetupScreen() {
       setError(t('serverSetup.invalidUrl'));
       return;
     }
-    setServerUrl(trimmed);
-    setError(null);
-    router.replace('/(auth)/login');
+    void (async () => {
+      await setServerUrl(trimmed);
+      setError(null);
+      router.replace('/(auth)/login');
+    })();
   };
 
   return (

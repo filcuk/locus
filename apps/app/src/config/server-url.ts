@@ -2,31 +2,50 @@
  * User-configurable instance URL. Never hardcode a host — every Locus
  * deployment is self-hosted (DESIGN §8, AGENTS §4).
  *
- * Persistence: localStorage on web when available; in-memory otherwise until a
- * native store lands with the Android toolchain.
+ * Persistence uses the same SecureStorage as auth tokens / device_id
+ * (`expo-secure-store` on native, localStorage on web). Call
+ * `hydrateServerUrl()` once at boot before reading; sync getters then
+ * serve the in-memory cache so call sites stay unified.
  */
+
+import { getSecureStorage } from '../auth/secureStorage.js';
 
 const STORAGE_KEY = 'locus.serverUrl';
 
 let memoryUrl: string | null = null;
+let hydrateInFlight: Promise<void> | null = null;
+let hydrated = false;
 
-function webStorage(): Storage | null {
-  try {
-    if (typeof globalThis !== 'undefined' && 'localStorage' in globalThis) {
-      return globalThis.localStorage;
-    }
-  } catch {
-    // Private mode / SSR — fall through to memory.
+function normaliseServerUrl(url: string): string {
+  return url.trim().replace(/\/+$/, '');
+}
+
+/**
+ * Load any persisted URL into memory. Safe to call repeatedly; concurrent
+ * callers share one in-flight read. Must run before the boot gate's
+ * `hasServerUrl()` check so native cold starts restore the instance.
+ */
+export async function hydrateServerUrl(): Promise<void> {
+  if (hydrated) return;
+  if (hydrateInFlight) {
+    await hydrateInFlight;
+    return;
   }
-  return null;
+  hydrateInFlight = (async () => {
+    const stored = await getSecureStorage().getItem(STORAGE_KEY);
+    if (stored !== null && stored.length > 0) {
+      memoryUrl = stored;
+    }
+    hydrated = true;
+  })();
+  try {
+    await hydrateInFlight;
+  } finally {
+    hydrateInFlight = null;
+  }
 }
 
 export function getServerUrl(): string | null {
-  const storage = webStorage();
-  if (storage) {
-    const stored = storage.getItem(STORAGE_KEY);
-    if (stored !== null && stored.length > 0) return stored;
-  }
   return memoryUrl;
 }
 
@@ -35,21 +54,24 @@ export function hasServerUrl(): boolean {
   return url !== null && url.length > 0;
 }
 
-export function setServerUrl(url: string): void {
-  const normalised = url.trim().replace(/\/+$/, '');
+export async function setServerUrl(url: string): Promise<void> {
+  const normalised = normaliseServerUrl(url);
   memoryUrl = normalised;
-  const storage = webStorage();
-  if (storage) {
-    storage.setItem(STORAGE_KEY, normalised);
-  }
+  hydrated = true;
+  await getSecureStorage().setItem(STORAGE_KEY, normalised);
 }
 
-export function clearServerUrl(): void {
+export async function clearServerUrl(): Promise<void> {
   memoryUrl = null;
-  const storage = webStorage();
-  if (storage) {
-    storage.removeItem(STORAGE_KEY);
-  }
+  hydrated = true;
+  await getSecureStorage().deleteItem(STORAGE_KEY);
+}
+
+/** Test helper — simulates process death (memory gone, SecureStorage intact). */
+export function resetServerUrlCacheForTests(): void {
+  memoryUrl = null;
+  hydrated = false;
+  hydrateInFlight = null;
 }
 
 /** Accept only http(s) absolute URLs; reject anything else. */
