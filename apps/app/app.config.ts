@@ -30,6 +30,8 @@ const config: ExpoConfig = {
       },
     ],
     '@maplibre/maplibre-react-native',
+    // Plain-HTTP LAN instances (DESIGN / DEVELOPMENT). Needs a native rebuild.
+    './plugins/withAndroidCleartextTraffic',
   ],
   experiments: {
     typedRoutes: true,

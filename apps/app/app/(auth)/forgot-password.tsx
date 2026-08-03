@@ -9,7 +9,7 @@ import {
   View,
 } from 'react-native';
 
-import { AuthHttpError, requestPasswordReset } from '@/auth';
+import { messageForAuthError, requestPasswordReset } from '@/auth';
 import { t } from '@/i18n';
 
 export default function ForgotPasswordScreen() {
@@ -25,13 +25,16 @@ export default function ForgotPasswordScreen() {
       await requestPasswordReset({ email: email.trim() });
       setDone(true);
     } catch (err) {
-      if (err instanceof AuthHttpError && err.code === 'rate_limited') {
-        setError(t('auth.errors.rateLimited'));
-      } else if (err instanceof AuthHttpError && err.code === 'reset_unavailable') {
-        setError(t('auth.forgotPassword.unavailable'));
-      } else {
-        setError(t('auth.errors.generic'));
-      }
+      setError(
+        messageForAuthError(err, {
+          known: {
+            rate_limited: t('auth.errors.rateLimited'),
+            reset_unavailable: t('auth.forgotPassword.unavailable'),
+          },
+          network: t('auth.errors.network'),
+          generic: t('auth.errors.generic'),
+        }),
+      );
     } finally {
       setBusy(false);
     }
@@ -59,6 +62,7 @@ export default function ForgotPasswordScreen() {
             keyboardType="email-address"
             textContentType="emailAddress"
             autoComplete="email"
+            placeholderTextColor="#a1a1aa"
             accessibilityLabel={t('auth.fields.email')}
           />
 
@@ -126,6 +130,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 10,
     fontSize: 16,
+    color: '#18181b',
     backgroundColor: '#ffffff',
   },
   error: {

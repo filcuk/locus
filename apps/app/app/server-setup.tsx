@@ -43,6 +43,7 @@ export default function ServerSetupScreen() {
         autoCorrect={false}
         keyboardType="url"
         placeholder={t('serverSetup.urlPlaceholder')}
+        placeholderTextColor="#a1a1aa"
         accessibilityLabel={t('serverSetup.urlLabel')}
       />
       {error ? <Text style={styles.error}>{error}</Text> : null}
@@ -89,6 +90,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 10,
     fontSize: 16,
+    color: '#18181b',
     backgroundColor: '#ffffff',
   },
   error: {
