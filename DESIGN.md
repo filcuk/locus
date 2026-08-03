@@ -507,7 +507,7 @@ Distance of a row is the distance to the nearest thing it contains:
 - **Place / point:** its own coordinates.
 - **Any parent:** the minimum of its own distance and its descendants'.
 
-Children sort by the same rule inside their parent. With no location fix, fall back to most-recently-updated. Recompute on screen focus and on pull-to-refresh — v1 takes one-shot fixes only, so there is no continuous tracking and no geofencing before P7.
+Children sort by the same rule inside their parent. With no location fix, fall back to most-recently-updated. Recompute on screen focus and on pull-to-refresh — v1 takes one-shot fixes only via `expo-location` (foreground permission at use; see [§13 Settled](#13-risks-and-open-items)), so there is no continuous tracking and no geofencing before P7.
 
 ### Entry screen
 
@@ -634,6 +634,7 @@ P0 also carries two de-risking spikes, both cheap now and expensive later:
 | Visits | A note with `visited_at`; private, so visit counts are per-viewer and derived on read |
 | Tags | Curated `system` set, plus `user`-scoped tags private to their owner |
 | Home ordering | Hierarchy preserved; roots sorted by distance to their nearest descendant |
+| One-shot Home GPS | `expo-location` foreground-only for Home distance ordering; permission requested at use with a reason; no background or continuous tracking before P7 |
 | Notifications | Optional operator-supplied webhook; we bundle no notifier and add no container |
 | Sync engine | WatermelonDB client library over our own Hono/`ChangeLog` protocol; no external sync appliance |
 | Server database | Postgres dialect only — PGlite embedded or external Postgres; no server-side SQLite |

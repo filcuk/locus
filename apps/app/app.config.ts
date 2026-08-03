@@ -19,6 +19,16 @@ const config: ExpoConfig = {
     'expo-dev-client',
     'expo-router',
     'expo-secure-store',
+    [
+      'expo-location',
+      {
+        // Foreground one-shot only (DESIGN §8 / §13). Never enable background.
+        locationWhenInUsePermission:
+          'Locus uses your location once to sort nearby places on Home.',
+        isIosBackgroundLocationEnabled: false,
+        isAndroidBackgroundLocationEnabled: false,
+      },
+    ],
     '@maplibre/maplibre-react-native',
   ],
   experiments: {

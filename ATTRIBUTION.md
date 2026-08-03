@@ -33,6 +33,7 @@ Add a row when a dependency, asset, or data source is added; remove it when it g
 | `expo-linking` | npm | MIT | Deep linking for Expo Router |
 | `expo-status-bar` | npm | MIT | Status bar styling |
 | `expo-secure-store` | npm | MIT | Native Keychain/Keystore persistence for auth tokens, `device_id`, and server URL (web uses `localStorage`) |
+| `expo-location` | npm | MIT | Foreground one-shot GPS for Home distance ordering (no background tracking) |
 | `react` | npm | MIT | UI library |
 | `react-dom` | npm | MIT | React DOM renderer for web |
 | `react-native` | npm | MIT | Native UI primitives |
