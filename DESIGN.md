@@ -137,10 +137,18 @@ CollectionItem
   added_at, updated_at, deleted_at?      # tombstoned like every synced table
 
 Tag                    # scope=system → curated seed catalogue, global; users cannot mutate
-  id, scope (system|user), owner_id?, label, colour?, icon?
-  # scope=user → owned by owner_id; others cannot use/find that tag on their own entries.
-  # Applied Tagging rows on a shared target are visible to viewers of that target (see rule 2).
+  id, scope (system|user), owner_id?, namespace?, label, colour?, icon?,
+  retired_at?            # soft-retire: keep existing taggings; block new assigns
+  # scope=user → catalog (picker / settings / filters) private to owner_id;
+  # others cannot use/find that tag on their own entries.
+  # Soft-delete of a user tag sets retired_at; optional strip-from-all also
+  # soft-deletes that tag's taggings. System tags are migration-seeded.
+  # Applied Tagging rows on a shared target are visible to viewers (see rule 2).
 Tagging                # targets: area | place | point | collection
+  id, tag_id, target_type, target_id, created_at, deleted_at?,
+  tag_label, tag_colour?, tag_scope, tag_namespace?
+  # Display fields are copied from the Tag at assign time so viewers of a
+  # shared target can render chips without receiving another user's Tag row.
 
 Note                   # personal timeline — private to its author, always
   id, author_id, target_type, target_id, body?, visited_at?,
@@ -219,8 +227,8 @@ Authoritative for `can(principal, action, resource)`. This table is the test fix
 
 **Resolution order** — evaluate in sequence, first match wins:
 
-1. **Soft-deleted ⇒ deny everyone.** `deleted_at` rows never appear in REST, pull, or public payloads.
-2. **Notes and `user`-scoped tag *definitions* ⇒ author/owner only.** A `Note`, and any `Tag` with `scope=user`, stays out of every other principal's catalogues, assign pickers, and tag filters — shares and public links do not expose the tag itself. **Applied tags are different:** a principal who can `view` a target also sees the tag chips applied to that target, including another user's private tags; they still cannot assign or rediscover those user tags on their own entries. Consequences: visit counts differ per viewer; shared entries may show foreign private-tag chips; each viewer's filter/picker still contains only system tags plus their own user tags.
+1. **Soft-deleted ⇒ deny everyone.** `deleted_at` rows never appear in REST, pull, or public payloads. (`Tag.retired_at` is not soft-delete: retired tags still sync to their owner / system catalogue so settings can show them, but new taggings are rejected.)
+2. **Notes ⇒ author only; `user`-scoped tag *definitions* ⇒ owner for catalog and assignment.** A `Note` is invisible to every other principal regardless of shares, public links, or ownership of the target — visit counts therefore differ per viewer. A `Tag` with `scope=user` is catalog-private to its `owner_id` (picker, settings, filters, sync of the Tag row) and may only be newly assigned by that owner; others cannot assign it. Soft-retired tags (`retired_at` set) cannot be newly assigned by anyone. Shares and public links do not expose the tag definition itself. **Applied tags are different:** anyone who can `view` a target may see that target's taggings (chips use denormalised `tag_label` / `tag_colour` on the Tagging), including another user's private tags; seeing a chip does not put the private Tag in the viewer's catalogue or let them assign it elsewhere. Consequences: visit counts differ per viewer; shared entries may show foreign private-tag chips; each viewer's filter/picker still contains only system tags plus their own user tags. System tags are visible to every authenticated user and read-only.
 3. **Owner ⇒ allow.** The resource's `owner_id` always wins.
 4. **Public link token ⇒ view only**, on the linked resource plus inherited children whose `visibility` is not `private`. A token never grants comment or write, and never traverses upward to parents or siblings.
 5. **Effective share = strongest grant** across the resource and all its ancestors (`edit` > `comment` > `view`). `visibility` does **not** reduce it — a `private` child of a shared parent is still visible to that share holder.
@@ -521,7 +529,7 @@ Photo gallery header, then title and **markdown** description, tag chips, visit 
 - **Notes and visits are one timeline.** A note with `visited_at` is a visit; without it, a plain note. Both are private to their author, so "last visit" and "visit count" are the viewer's own and are computed on read, never stored.
 - **Comments are the collaborative channel**, visible to anyone who can view the entry.
 - **@mentioning a user in a comment** is allowed for anyone who can comment. If the mentioned user lacks access to the target, the mention creates an **access request** the resource owner must approve before a share is granted — it does not grant access by itself. A mention may reveal that the resource exists to someone who cannot yet see it; that is accepted for this path (see [§13 Settled](#13-risks-and-open-items)).
-- **Tags:** curated `system` seed catalogue plus the viewer's own private tags. On a shared entry, applied tags (including another user's private tags) are visible as chips; those private tags cannot be assigned to the viewer's own entries or appear in their picker/filters.
+- **Tags:** curated `system` seed catalogue plus the viewer's own private tags in the picker/filters. On a shared entry, applied taggings (including another user's private tags) render as chips via denormalised Tagging fields; those private tags still cannot be assigned to the viewer's own entries or appear in their catalogue.
 - **Markdown must be sanitised**, and on `p/[token]` it renders to anonymous visitors, so sanitisation happens server-side in the preview shell rather than only in the client renderer.
 
 **Polygon drawing** (P2-B) is a real workstream, not a library call: `terra-draw` or `mapbox-gl-draw` covers web, but MapLibre React Native has no draw tool, so native needs custom gestures over `ShapeSource`/`FillLayer`. Geometry maths lives in `packages/shared` so both platforms share one implementation. **Draw style:** tap to set each vertex (line point), then close the ring — **not** freehand stroke sampling. (Maintainer Planka Option A, 2026-08-03.)
@@ -636,7 +644,7 @@ P0 also carries two de-risking spikes, both cheap now and expensive later:
 | Client token storage | `expo-secure-store` for access + refresh tokens and `device_id` on native; `localStorage` web fallback (SecureStore has no web backend); single-flight refresh; 401 clears tokens only, never WatermelonDB |
 | Notes vs comments | Notes are a personal visit timeline, private to their author forever; comments are collaborative and follow the target's view permission |
 | Visits | A note with `visited_at`; private, so visit counts are per-viewer and derived on read |
-| Tags (P2-D) | Curated `system` seed catalogue (random hex colours for now; icons later) with categories — **type:** monument \| view \| trail \| natural_feature; **terrain:** easy \| moderate \| hard \| impossible; **rurality:** urban \| suburban \| rural \| remote; **beauty:** unrefined \| plain \| moderate \| exquisite; **privacy:** bustling \| populated \| quiet \| secluded. Any non-anonymous user may **create** `user`-scoped tags (local to that user). Others cannot **use** (assign) another user's tags. Private tag *definitions* stay invisible in catalogues/pickers/filters; on an item **shared with them**, viewers **see** tags applied to that item but cannot use/find those user tags on their own entries. **Retire:** removed tags cannot be newly assigned but remain on old entries; on remove, offer a choice to strip the tag from all entries. (Maintainer chat 2026-08-03.) |
+| Tags (P2-D) | Curated `system` seed catalogue with namespaced keys (random hex colours for now; icons later) and categories — **type:** monument \| view \| trail \| natural_feature; **terrain:** easy \| moderate \| hard \| impossible; **rurality:** urban \| suburban \| rural \| remote; **beauty:** unrefined \| plain \| moderate \| exquisite; **privacy:** bustling \| populated \| quiet \| secluded. Any non-anonymous user may **create** `user`-scoped tags (local to that user). Others cannot **use** (assign) another user's tags. Private tag *definitions* stay invisible in catalogues/pickers/filters; on an item **shared with them**, viewers **see** applied tags as chips via denormalised Tagging fields but cannot use/find those user tags on their own entries. **Retire:** soft-retire (`retired_at`) blocks new assigns but keeps existing taggings; on remove, offer a choice to strip the tag from all entries. (Maintainer chat 2026-08-03.) |
 | Polygon limits | Defaults: **128** vertices per ring; Douglas-Peucker simplify **`0.00005`°** (~5 m). Env-configurable via `POLYGON_MAX_VERTICES_PER_RING` and `POLYGON_SIMPLIFY_TOLERANCE_DEG` (future admin UI). Operators may set simplify ≈10 m via env; defaults remain B. (Option B; maintainer chat 2026-08-03; earlier Planka note of ~10 m does not override the chat default.) |
 | Polygon draw UX (P2-B) | Tap to set each vertex (not freehand). Web and native share this interaction model; native implements it with custom MapLibre gestures. (Planka Option A; filcuk 2026-08-03.) |
 | Photo attach ACL | Attaching a photo requires `create_child` on the target (not `comment`); view follows the target's `view` permission. Detail in [§4 Photos](#photos). (Maintainer chat 2026-08-03; aligns with PR #48.) |

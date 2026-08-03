@@ -26,6 +26,7 @@ const ISO_DATE_KEYS: ReadonlySet<string> = new Set([
   'visited_at',
   'expires_at',
   'revoked_at',
+  'retired_at',
 ]);
 
 const WATERMELON_META: ReadonlySet<string> = new Set([

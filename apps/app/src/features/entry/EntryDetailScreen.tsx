@@ -12,6 +12,7 @@ import {
 } from 'react-native';
 
 import { MarkdownDescription } from '@/features/markdown';
+import { TagChipsRow, useEntryTagChips } from '@/features/tags';
 import { t } from '@/i18n';
 
 import {
@@ -26,8 +27,8 @@ import { useEntryDetail } from './useEntryDetail';
 type FabMode = 'visit' | 'note' | 'comment' | null;
 
 /**
- * Entry screen shell: title, markdown description, visit stats, notes/comments
- * timeline, FAB for add visit / note / comment (DESIGN §8). Gallery/tags later.
+ * Entry screen shell: title, markdown description, tag chips, visit stats,
+ * notes/comments timeline, FAB for add visit / note / comment (DESIGN §8).
  */
 export function EntryDetailScreen({
   kind,
@@ -44,6 +45,7 @@ export function EntryDetailScreen({
     lastVisitAt,
     loading,
   } = useEntryDetail(kind, id);
+  const { chips } = useEntryTagChips(kind, id);
   const [fabOpen, setFabOpen] = useState(false);
   const [mode, setMode] = useState<FabMode>(null);
   const [draft, setDraft] = useState('');
@@ -126,6 +128,9 @@ export function EntryDetailScreen({
         ) : (
           <Text style={styles.meta}>{t('entry.detail.noDescription')}</Text>
         )}
+
+        <Text style={styles.section}>{t('entry.detail.tags')}</Text>
+        <TagChipsRow chips={chips} />
 
         <Text style={styles.section}>{t('entry.detail.visits')}</Text>
         <Text style={styles.meta} testID="entry-visit-stats">

@@ -1,5 +1,5 @@
 import { Model, type Query } from '@nozbe/watermelondb';
-import { children, text } from '@nozbe/watermelondb/decorators';
+import { children, date, text } from '@nozbe/watermelondb/decorators';
 
 import type Tagging from './Tagging';
 
@@ -11,9 +11,11 @@ export default class Tag extends Model {
 
   @text('scope') scope!: string;
   @text('owner_id') ownerId!: string | null;
+  @text('namespace') namespace!: string | null;
   @text('label') label!: string;
   @text('colour') colour!: string | null;
   @text('icon') icon!: string | null;
+  @date('retired_at') retiredAt!: Date | null;
 
   @children('taggings') taggings!: Query<Tagging>;
 }

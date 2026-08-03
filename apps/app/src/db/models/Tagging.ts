@@ -14,6 +14,10 @@ export default class Tagging extends Model {
   @text('target_id') targetId!: string;
   @readonly @date('created_at') createdAt!: Date;
   @date('deleted_at') deletedAt!: Date | null;
+  @text('tag_label') tagLabel!: string;
+  @text('tag_colour') tagColour!: string | null;
+  @text('tag_scope') tagScope!: string;
+  @text('tag_namespace') tagNamespace!: string | null;
 
   @relation('tags', 'tag_id') tag!: Relation<Tag>;
 }

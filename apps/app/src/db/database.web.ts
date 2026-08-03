@@ -2,10 +2,12 @@ import { Database } from '@nozbe/watermelondb';
 import LokiJSAdapter from '@nozbe/watermelondb/adapters/lokijs';
 
 import { modelClasses } from './models';
+import { migrations } from './migrations';
 import { schema } from './schema';
 
 const adapter = new LokiJSAdapter({
   schema,
+  migrations,
   useWebWorker: false,
   useIncrementalIndexedDB: true,
   onSetUpError: (error) => {

@@ -17,3 +17,13 @@ export {
 } from './notesComments';
 export { createPlaceLocal, softDeletePlaceLocal, type CreatePlaceLocalInput } from './places';
 export { createPointLocal, softDeletePointLocal, type CreatePointLocalInput } from './points';
+export {
+  createTaggingLocal,
+  createUserTagLocal,
+  isTagAssignableByViewer,
+  isTagInViewerCatalog,
+  retireUserTagLocal,
+  softDeleteTaggingLocal,
+  type CreateTaggingLocalInput,
+  type CreateUserTagLocalInput,
+} from './tags';
