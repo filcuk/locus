@@ -1,4 +1,4 @@
-import { Link } from 'expo-router';
+import { Link, type Href } from 'expo-router';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { t } from '@/i18n';
@@ -64,7 +64,7 @@ function HierarchyRow({ node, depth }: { node: HierarchyNode; depth: number }) {
   );
 }
 
-function hrefFor(kind: EntryKind, id: string): string {
+function hrefFor(kind: EntryKind, id: string): Href {
   if (kind === 'area') return `/areas/${id}`;
   if (kind === 'place') return `/places/${id}`;
   return `/points/${id}`;

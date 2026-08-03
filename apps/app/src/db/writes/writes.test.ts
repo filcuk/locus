@@ -4,9 +4,22 @@ import { describe, expect, it } from 'vitest';
 
 import { modelClasses } from '../models';
 import { schema } from '../schema';
+import { createAreaLocal, softDeleteAreaLocal } from './areas';
 import { createPlaceLocal } from './places';
 import { createPointLocal } from './points';
 
+const SQUARE = {
+  type: 'Polygon' as const,
+  coordinates: [
+    [
+      [0, 0],
+      [1, 0],
+      [1, 1],
+      [0, 1],
+      [0, 0],
+    ],
+  ],
+};
 const OWNER = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa';
 
 function memoryDatabase(): Database {
@@ -66,5 +79,52 @@ describe('offline place/point writers (WatermelonDB)', () => {
         areaId: 'cccccccc-cccc-4ccc-8ccc-cccccccccccc',
       }),
     ).rejects.toThrow(/never both/);
+  });
+
+  it('creates an area with derived bbox and cascades soft-delete', async () => {
+    const db = memoryDatabase();
+    const area = await createAreaLocal(db, {
+      ownerId: OWNER,
+      title: 'Offline area',
+      geom: SQUARE,
+    });
+    expect(area.title).toBe('Offline area');
+    expect(area.bboxMinLat).toBe(0);
+    expect(area.bboxMaxLon).toBe(1);
+    expect(typeof area.geomGeojson).toBe('string');
+
+    const place = await createPlaceLocal(db, {
+      ownerId: OWNER,
+      title: 'In area',
+      areaId: area.id,
+    });
+    expect(place.areaId).toBe(area.id);
+
+    const nested = await createPointLocal(db, {
+      ownerId: OWNER,
+      title: 'Under place',
+      lat: 0.5,
+      lon: 0.5,
+      placeId: place.id,
+    });
+    const direct = await createPointLocal(db, {
+      ownerId: OWNER,
+      title: 'Direct in area',
+      lat: 0.2,
+      lon: 0.2,
+      areaId: area.id,
+    });
+    expect(direct.areaId).toBe(area.id);
+
+    await softDeleteAreaLocal(db, area);
+
+    const areaAfter = await db.get('areas').find(area.id);
+    expect((areaAfter as { deletedAt: Date | null }).deletedAt).toBeTruthy();
+    const placeAfter = await db.get('places').find(place.id);
+    expect((placeAfter as { deletedAt: Date | null }).deletedAt).toBeTruthy();
+    const nestedAfter = await db.get('points').find(nested.id);
+    expect((nestedAfter as { deletedAt: Date | null }).deletedAt).toBeTruthy();
+    const directAfter = await db.get('points').find(direct.id);
+    expect((directAfter as { deletedAt: Date | null }).deletedAt).toBeTruthy();
   });
 });

@@ -3,6 +3,7 @@
  * query-level changelog window (DESIGN §5). Echo-suppresses the caller's device.
  */
 import {
+  CascadeSoftDeletePayloadSchema,
   emptySyncChanges,
   SYNCED_TABLES,
   type SyncChanges,
@@ -51,6 +52,16 @@ export async function syncPull(
     if (row.op === 'delete') {
       // Revocation and soft-delete are indistinguishable to the client (DESIGN §5).
       bag(changes, table).deleted.push(row.entityId);
+      // Expand one ChangeLog cascade event into per-table deleted ids (DESIGN §4).
+      const cascade = CascadeSoftDeletePayloadSchema.safeParse(row.payload);
+      if (cascade.success) {
+        for (const placeId of cascade.data.cascaded.places) {
+          changes.places.deleted.push(placeId);
+        }
+        for (const pointId of cascade.data.cascaded.points) {
+          changes.points.deleted.push(pointId);
+        }
+      }
       continue;
     }
 
