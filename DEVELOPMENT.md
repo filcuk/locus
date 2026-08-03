@@ -150,6 +150,31 @@ pnpm --filter app exec expo run:android
 - After native dependency or config-plugin changes, run `prebuild` again (or clean `android/` and regenerate).
 - Day-to-day JS reload: `pnpm --filter app start` (`expo start --dev-client`) once a build is installed.
 
+### Windows native build notes (maintainer)
+
+On Windows, `assembleDebug` / `expo run:android` can fail for reasons that look like path length but are usually **tooling**:
+
+1. **Ninja 1.10 (bundled with SDK CMake 3.22.1) vs long object paths** — even with `LongPathsEnabled=1` and a short checkout (e.g. `C:\l`), pnpm's `.pnpm` store plus CMake output still produces paths ~250 characters. Ninja **1.12+** is required (Reanimated's [Building for Android on Windows](https://docs.swmansion.com/react-native-reanimated/docs/guides/building-on-windows) guide). Symptom: `ninja: error: manifest 'build.ninja' still dirty after 100 tries` while CMake re-runs in a loop under `react-native-worklets` / `react-native-screens`.
+2. **Build-tools `lld.exe` on `PATH`** — Android SDK `build-tools/*/lld.exe` is not the NDK ELF linker. If it shadows NDK `ld.lld`, linking fails with `lld: error: unknown argument: -z`. Keep `build-tools` off the shell `PATH` for native builds; put NDK `toolchains/llvm/prebuilt/windows-x86_64/bin` first, or use a small shim dir that exposes NDK `lld.exe`.
+
+**Working maintainer recipe** (no SDK mutation, no `node-linker` change):
+
+```powershell
+# Optional short worktree outside a deep Documents path
+# git worktree add C:\l main
+
+# Local CMake package: copy SDK 3.22.1, replace only its ninja with 1.12.1
+# (download: https://github.com/ninja-build/ninja/releases — Apache-2.0)
+# Then point AGP at it from apps/app/android/local.properties (gitignored):
+#   sdk.dir=C:\\Programs\\Android
+#   cmake.dir=C:\\l\\.tools\\cmake-3.22.1
+
+cd apps/app/android
+.\gradlew.bat app:assembleDebug -x lint -x test -PreactNativeArchitectures=arm64-v8a
+```
+
+Prefer installing SDK **CMake 3.31+** (ships Ninja 1.12+) via SDK Manager when convenient; until AGP is pointed at it, the local `cmake.dir` + Ninja 1.12 copy above is enough. Do **not** change global pnpm `node-linker` without an explicit decision.
+
 There is no automated native MapLibre check in CI — see the verification table below.
 
 ---
@@ -172,6 +197,8 @@ Repo-wide gates (typecheck, lint, tests, licences): see AGENTS §6.
 | Symptom | Likely cause |
 |---------|----------------|
 | Gradle / `expo run:android` cannot find the SDK | `ANDROID_HOME` or `ANDROID_SDK_ROOT` unset, mismatched, or pointing at Android Studio’s install root instead of the **SDK** directory |
+| `ninja: … build.ninja still dirty after 100 tries` (worklets/screens) | SDK CMake 3.22.1 ships Ninja **1.10**; use Ninja **1.12+** via a local `cmake.dir` copy or CMake 3.31+. Short path (`C:\l`) helps but is not sufficient alone. See Windows native build notes above. |
+| `lld: error: unknown argument: -z` during CMake link | `build-tools/*/lld.exe` on `PATH` shadowing NDK `ld.lld` — remove build-tools from `PATH` for the build shell |
 | App cannot reach `http://…` LAN / localhost API on device | Android blocks cleartext HTTP by default; self-hosted plain-HTTP URLs need an explicit cleartext allowance (DESIGN risks / Android notes) or use HTTPS |
 | `pnpm --filter app web` / missing `expo` scripts | Checked out a **stub** or pre-client tip (e.g. early `main` or a paths-only branch) — use a tip that includes the Expo app (post–I1 / `chore/p0-integration`) |
 | Metro / adb “does nothing” on Windows | Firewall denied the listen/connect prompt; approve for private networks |
