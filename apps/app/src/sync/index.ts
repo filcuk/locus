@@ -43,6 +43,15 @@ export {
 } from './powerSaving.js';
 
 export {
+  bindActiveSyncDriver,
+  refreshSync,
+  requestSyncPush,
+  unbindActiveSyncDriver,
+} from './activeDriver.js';
+
+export { SyncDriverProvider } from './SyncDriverProvider.js';
+
+export {
   bindSyncStatusHooks,
   getSyncStatusHooks,
   silenceSyncStatusHooks,

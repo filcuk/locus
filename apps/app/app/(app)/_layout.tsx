@@ -4,6 +4,7 @@ import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
 
 import { hasSession } from '@/auth';
 import { t } from '@/i18n';
+import { SyncDriverProvider } from '@/sync';
 
 export default function AppLayout() {
   const [ready, setReady] = useState(false);
@@ -33,7 +34,11 @@ export default function AppLayout() {
     return <Redirect href="/(auth)/login" />;
   }
 
-  return <Stack screenOptions={{ headerShown: true }} />;
+  return (
+    <SyncDriverProvider>
+      <Stack screenOptions={{ headerShown: true }} />
+    </SyncDriverProvider>
+  );
 }
 
 const styles = StyleSheet.create({
