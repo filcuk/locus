@@ -13,8 +13,12 @@ export {
 export { schema } from './schema';
 export { modelClasses } from './models';
 export {
+  createCollectionLocal,
+  createCollectionItemLocal,
   createPlaceLocal,
   createPointLocal,
+  softDeleteCollectionLocal,
+  softDeleteCollectionItemLocal,
   softDeletePlaceLocal,
   softDeletePointLocal,
 } from './writes';

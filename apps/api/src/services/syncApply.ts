@@ -7,6 +7,8 @@ import {
   PlaceSchema,
   PointSchema,
   AreaSchema,
+  CollectionSchema,
+  CollectionItemSchema,
   ShareSchema,
   bboxOf,
   type AreaGeometry,
@@ -16,7 +18,7 @@ import {
 import { and, eq, isNull } from 'drizzle-orm';
 
 import type { DbHandle } from '../db/client.js';
-import { areas, places, points, shares } from '../db/schema.js';
+import { areas, collectionItems, collections, places, points, shares } from '../db/schema.js';
 import { appendChange, type ChangeOp } from './changeLog.js';
 import { assertCan, ForbiddenError, type Principal } from './permissions.js';
 
@@ -89,6 +91,10 @@ async function applyOne(
         return await applyPoint(ctx, op, raw);
       case 'areas':
         return await applyArea(ctx, op, raw);
+      case 'collections':
+        return await applyCollection(ctx, op, raw);
+      case 'collection_items':
+        return await applyCollectionItem(ctx, op, raw);
       case 'shares':
         return await applyShare(ctx, op, raw);
       default:
@@ -131,7 +137,9 @@ async function applyDelete(
         .update(places)
         .set({ deletedAt: now, updatedAt: now })
         .where(eq(places.id, id));
-      cascadePayload = { cascaded: { places: [], points: cascaded.points } };
+      cascadePayload = {
+        cascaded: { places: [], points: cascaded.points, collection_items: [] },
+      };
       break;
     }
     case 'points':
@@ -140,7 +148,43 @@ async function applyDelete(
     case 'areas': {
       const cascaded = await cascadeSoftDeleteOwnedAreaChildren(ctx.db, id, now);
       await ctx.db.update(areas).set({ deletedAt: now, updatedAt: now }).where(eq(areas.id, id));
-      cascadePayload = { cascaded };
+      cascadePayload = {
+        cascaded: { ...cascaded, collection_items: [] },
+      };
+      break;
+    }
+    case 'collections': {
+      const itemIds = await cascadeSoftDeleteCollectionItems(ctx.db, id, now);
+      await ctx.db
+        .update(collections)
+        .set({ deletedAt: now, updatedAt: now })
+        .where(eq(collections.id, id));
+      cascadePayload = {
+        cascaded: { places: [], points: [], collection_items: itemIds },
+      };
+      break;
+    }
+    case 'collection_items': {
+      const [item] = await ctx.db
+        .select()
+        .from(collectionItems)
+        .where(eq(collectionItems.id, id))
+        .limit(1);
+      if (!item || item.deletedAt) {
+        return { table, id, code: 'VALIDATION_FAILED', message: 'collection item not found' };
+      }
+      try {
+        await assertCan(ctx.db, ctx.principal, 'edit', {
+          type: 'collection',
+          id: item.collectionId,
+        });
+      } catch {
+        return { table, id, code: 'FORBIDDEN', message: 'Forbidden' };
+      }
+      await ctx.db
+        .update(collectionItems)
+        .set({ deletedAt: now, updatedAt: now })
+        .where(eq(collectionItems.id, id));
       break;
     }
     case 'shares':
@@ -157,7 +201,9 @@ async function applyDelete(
 
   const hasCascade =
     cascadePayload !== null &&
-    (cascadePayload.cascaded.places.length > 0 || cascadePayload.cascaded.points.length > 0);
+    (cascadePayload.cascaded.places.length > 0 ||
+      cascadePayload.cascaded.points.length > 0 ||
+      cascadePayload.cascaded.collection_items.length > 0);
 
   await appendChange(ctx.db, {
     entityType: table,
@@ -464,6 +510,140 @@ async function applyArea(
   return 'ok';
 }
 
+async function applyCollection(
+  ctx: ApplyContext,
+  op: ChangeOp,
+  raw: unknown,
+): Promise<'ok' | ApplyRejection> {
+  const parsed = CollectionSchema.safeParse(raw);
+  if (!parsed.success) {
+    return {
+      table: 'collections',
+      id: readId(raw),
+      code: 'VALIDATION_FAILED',
+      message: parsed.error.message,
+    };
+  }
+  const row = parsed.data;
+  if (op === 'update') {
+    await assertCan(ctx.db, ctx.principal, 'edit', { type: 'collection', id: row.id });
+  }
+
+  const now = new Date().toISOString();
+  const values = {
+    id: row.id,
+    ownerId: op === 'create' ? ctx.principal.userId : row.owner_id,
+    title: row.title,
+    description: row.description ?? null,
+    visibility: row.visibility,
+    createdAt: row.created_at,
+    updatedAt: now,
+    updatedBy: ctx.principal.userId,
+    deletedAt: row.deleted_at ?? null,
+  };
+
+  try {
+    if (op === 'create') {
+      await ctx.db.insert(collections).values(values);
+    } else {
+      await ctx.db.update(collections).set(values).where(eq(collections.id, row.id));
+    }
+  } catch (err) {
+    if (isPgConstraintError(err)) {
+      return {
+        table: 'collections',
+        id: row.id,
+        code: 'VALIDATION_FAILED',
+        message: 'collection write violated a database constraint',
+      };
+    }
+    throw err;
+  }
+
+  await appendChange(ctx.db, {
+    entityType: 'collections',
+    entityId: row.id,
+    op,
+    payload: collectionToWire(values),
+    actorId: ctx.principal.userId,
+    deviceId: ctx.deviceId,
+  });
+  return 'ok';
+}
+
+async function applyCollectionItem(
+  ctx: ApplyContext,
+  op: ChangeOp,
+  raw: unknown,
+): Promise<'ok' | ApplyRejection> {
+  const parsed = CollectionItemSchema.safeParse(raw);
+  if (!parsed.success) {
+    return {
+      table: 'collection_items',
+      id: readId(raw),
+      code: 'VALIDATION_FAILED',
+      message: parsed.error.message,
+    };
+  }
+  const row = parsed.data;
+
+  if (op === 'create') {
+    await assertCan(ctx.db, ctx.principal, 'create_child', {
+      type: 'collection',
+      id: row.collection_id,
+    });
+    await assertCan(ctx.db, ctx.principal, 'view', {
+      type: row.item_type,
+      id: row.item_id,
+    });
+  } else {
+    await assertCan(ctx.db, ctx.principal, 'edit', {
+      type: 'collection',
+      id: row.collection_id,
+    });
+  }
+
+  const now = new Date().toISOString();
+  const values = {
+    id: row.id,
+    collectionId: row.collection_id,
+    itemType: row.item_type,
+    itemId: row.item_id,
+    position: row.position ?? null,
+    addedAt: row.added_at,
+    updatedAt: now,
+    deletedAt: row.deleted_at ?? null,
+  };
+
+  try {
+    if (op === 'create') {
+      await ctx.db.insert(collectionItems).values(values);
+    } else {
+      await ctx.db.update(collectionItems).set(values).where(eq(collectionItems.id, row.id));
+    }
+  } catch (err) {
+    if (isPgConstraintError(err)) {
+      return {
+        table: 'collection_items',
+        id: row.id,
+        code: 'VALIDATION_FAILED',
+        message: 'collection item write violated a database constraint',
+      };
+    }
+    throw err;
+  }
+
+  await appendChange(ctx.db, {
+    entityType: 'collection_items',
+    entityId: row.id,
+    op,
+    payload: collectionItemToWire(values),
+    actorId: ctx.principal.userId,
+    deviceId: ctx.deviceId,
+  });
+  return 'ok';
+}
+
 async function applyShare(
   ctx: ApplyContext,
   op: ChangeOp,
@@ -518,6 +698,34 @@ async function applyShare(
     deviceId: ctx.deviceId,
   });
   return 'ok';
+}
+
+/**
+ * Soft-delete membership rows when a collection is soft-deleted (DESIGN §4 —
+ * one cascade event, not one op per CollectionItem).
+ */
+async function cascadeSoftDeleteCollectionItems(
+  db: ApplyContext['db'],
+  collectionId: string,
+  now: string,
+): Promise<string[]> {
+  const rows = await db
+    .select({ id: collectionItems.id })
+    .from(collectionItems)
+    .where(
+      and(eq(collectionItems.collectionId, collectionId), isNull(collectionItems.deletedAt)),
+    );
+
+  const ids = rows.map((r) => r.id);
+  if (ids.length === 0) return [];
+
+  await db
+    .update(collectionItems)
+    .set({ deletedAt: now, updatedAt: now })
+    .where(
+      and(eq(collectionItems.collectionId, collectionId), isNull(collectionItems.deletedAt)),
+    );
+  return ids;
 }
 
 function tableToResource(
@@ -669,6 +877,52 @@ function areaToWire(row: {
     created_at: row.createdAt,
     updated_at: row.updatedAt,
     updated_by: row.updatedBy,
+    deleted_at: row.deletedAt ?? undefined,
+  };
+}
+
+function collectionToWire(row: {
+  id: string;
+  ownerId: string;
+  title: string;
+  description: string | null;
+  visibility: string;
+  createdAt: string;
+  updatedAt: string;
+  updatedBy: string;
+  deletedAt: string | null;
+}) {
+  return {
+    id: row.id,
+    owner_id: row.ownerId,
+    title: row.title,
+    description: row.description ?? undefined,
+    visibility: row.visibility,
+    created_at: row.createdAt,
+    updated_at: row.updatedAt,
+    updated_by: row.updatedBy,
+    deleted_at: row.deletedAt ?? undefined,
+  };
+}
+
+function collectionItemToWire(row: {
+  id: string;
+  collectionId: string;
+  itemType: string;
+  itemId: string;
+  position: number | null;
+  addedAt: string;
+  updatedAt: string;
+  deletedAt: string | null;
+}) {
+  return {
+    id: row.id,
+    collection_id: row.collectionId,
+    item_type: row.itemType,
+    item_id: row.itemId,
+    position: row.position ?? undefined,
+    added_at: row.addedAt,
+    updated_at: row.updatedAt,
     deleted_at: row.deletedAt ?? undefined,
   };
 }

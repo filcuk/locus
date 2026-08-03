@@ -90,6 +90,8 @@ export const CascadeSoftDeletePayloadSchema = z.object({
   cascaded: z.object({
     places: z.array(UuidSchema).default([]),
     points: z.array(UuidSchema).default([]),
+    /** Membership rows when a collection is soft-deleted (DESIGN §4). */
+    collection_items: z.array(UuidSchema).default([]),
   }),
 });
 export type CascadeSoftDeletePayload = z.infer<typeof CascadeSoftDeletePayloadSchema>;

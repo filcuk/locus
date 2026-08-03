@@ -54,6 +54,13 @@ export const catalogue = {
 
   'collections.title': 'Collections',
   'collections.empty': 'No collections yet.',
+  'collections.memberCount': '{count} members',
+  'collections.add': 'New collection',
+  'collections.createTitle': 'Title',
+  'collections.createPlaceholder': 'Collection name',
+  'collections.createSubmit': 'Create',
+  'collections.createCancel': 'Cancel',
+  'collections.createErrorTitle': 'Enter a title.',
 
   'map.title': 'Map',
 
@@ -73,7 +80,16 @@ export const catalogue = {
   'point.detail.stub': 'Point detail arrives in P1.',
 
   'collection.detail.title': 'Collection',
-  'collection.detail.stub': 'Collection detail arrives in a later phase.',
+  'collection.detail.missing': 'This collection was deleted or is unavailable.',
+  'collection.detail.members': 'Members',
+  'collection.detail.membersEmpty': 'No members yet.',
+  'collection.detail.add': 'Add from your entries',
+  'collection.detail.addEmpty': 'No other entries to add.',
+  'collection.detail.remove': 'Remove',
+  'collection.detail.addAction': 'Add',
+  'collection.detail.kind.area': 'Area',
+  'collection.detail.kind.place': 'Place',
+  'collection.detail.kind.point': 'Point',
 
   'share.title': 'Sharing',
   'share.stub': 'Access management arrives in P4.',
@@ -105,6 +121,14 @@ export const catalogue = {
 
 export type MessageKey = keyof typeof catalogue;
 
-export function t(key: MessageKey): string {
-  return catalogue[key];
+export function t(
+  key: MessageKey,
+  vars?: Readonly<Record<string, string | number>>,
+): string {
+  let out: string = catalogue[key];
+  if (!vars) return out;
+  for (const [name, value] of Object.entries(vars)) {
+    out = out.replaceAll(`{${name}}`, String(value));
+  }
+  return out;
 }

@@ -12,7 +12,7 @@ import {
 import { and, eq, gt, lte, ne, sql } from 'drizzle-orm';
 
 import type { DbHandle } from '../db/client.js';
-import { changeLog, places } from '../db/schema.js';
+import { changeLog, collectionItems, places } from '../db/schema.js';
 import { getReadableWatermark } from './changeLog.js';
 import { can, type Principal } from './permissions.js';
 
@@ -60,6 +60,9 @@ export async function syncPull(
         }
         for (const pointId of cascade.data.cascaded.points) {
           changes.points.deleted.push(pointId);
+        }
+        for (const itemId of cascade.data.cascaded.collection_items) {
+          changes.collection_items.deleted.push(itemId);
         }
       }
       continue;
@@ -167,6 +170,15 @@ async function mayViewEntity(
       return can(db, principal, 'view', { type: 'point', id });
     case 'collections':
       return can(db, principal, 'view', { type: 'collection', id });
+    case 'collection_items': {
+      const [item] = await db
+        .select({ collectionId: collectionItems.collectionId })
+        .from(collectionItems)
+        .where(eq(collectionItems.id, id))
+        .limit(1);
+      if (!item) return false;
+      return can(db, principal, 'view', { type: 'collection', id: item.collectionId });
+    }
     case 'shares':
       return true; // shares targeting the user are filtered in late-grant / payload
     default:
