@@ -12,9 +12,11 @@ import { createAuthRoutes } from './routes/auth.js';
 import { createCollectionsRoutes } from './routes/collections.js';
 import { createCommentsRoutes } from './routes/comments.js';
 import { createHealthRoutes } from './routes/health.js';
+import { createInvitesRoutes } from './routes/invites.js';
 import { createNotesRoutes } from './routes/notes.js';
 import { createPlacesRoutes } from './routes/places.js';
 import { createPointsRoutes } from './routes/points.js';
+import { createSharesRoutes } from './routes/shares.js';
 import { createSyncRoutes } from './routes/sync.js';
 import { createMailer, type Mailer } from './services/mailer.js';
 
@@ -44,6 +46,8 @@ export function createApp(handle: DbHandle, options: CreateAppOptions = {}) {
   app.route('/', createCollectionsRoutes(handle));
   app.route('/', createNotesRoutes(handle));
   app.route('/', createCommentsRoutes(handle));
+  app.route('/', createSharesRoutes(handle));
+  app.route('/', createInvitesRoutes(handle, { mailer, now: options.now }));
   app.route('/', createSyncRoutes(handle));
 
   app.get('/', (c) =>
