@@ -7,5 +7,13 @@ export {
   type CreateCollectionLocalInput,
   type CreateCollectionItemLocalInput,
 } from './collections';
+export {
+  createCommentLocal,
+  createNoteLocal,
+  softDeleteCommentLocal,
+  softDeleteNoteLocal,
+  type CreateCommentLocalInput,
+  type CreateNoteLocalInput,
+} from './notesComments';
 export { createPlaceLocal, softDeletePlaceLocal, type CreatePlaceLocalInput } from './places';
 export { createPointLocal, softDeletePointLocal, type CreatePointLocalInput } from './points';

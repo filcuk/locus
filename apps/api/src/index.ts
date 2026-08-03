@@ -10,7 +10,9 @@ import { env, loadEnv } from './env.js';
 import { createAreasRoutes } from './routes/areas.js';
 import { createAuthRoutes } from './routes/auth.js';
 import { createCollectionsRoutes } from './routes/collections.js';
+import { createCommentsRoutes } from './routes/comments.js';
 import { createHealthRoutes } from './routes/health.js';
+import { createNotesRoutes } from './routes/notes.js';
 import { createPlacesRoutes } from './routes/places.js';
 import { createPointsRoutes } from './routes/points.js';
 import { createSyncRoutes } from './routes/sync.js';
@@ -40,6 +42,8 @@ export function createApp(handle: DbHandle, options: CreateAppOptions = {}) {
   app.route('/', createPlacesRoutes(handle));
   app.route('/', createPointsRoutes(handle));
   app.route('/', createCollectionsRoutes(handle));
+  app.route('/', createNotesRoutes(handle));
+  app.route('/', createCommentsRoutes(handle));
   app.route('/', createSyncRoutes(handle));
 
   app.get('/', (c) =>

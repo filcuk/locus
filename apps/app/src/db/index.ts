@@ -15,10 +15,14 @@ export { modelClasses } from './models';
 export {
   createCollectionLocal,
   createCollectionItemLocal,
+  createCommentLocal,
+  createNoteLocal,
   createPlaceLocal,
   createPointLocal,
   softDeleteCollectionLocal,
   softDeleteCollectionItemLocal,
+  softDeleteCommentLocal,
+  softDeleteNoteLocal,
   softDeletePlaceLocal,
   softDeletePointLocal,
 } from './writes';

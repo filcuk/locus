@@ -21,6 +21,12 @@ import type { DbHandle } from '../db/client.js';
 import { areas, collectionItems, collections, places, points, shares } from '../db/schema.js';
 import { appendChange, type ChangeOp } from './changeLog.js';
 import { assertCan, ForbiddenError, type Principal } from './permissions.js';
+import {
+  applyComment,
+  applyNote,
+  markCommentDeleted,
+  markNoteDeleted,
+} from './syncApplyNotesComments.js';
 
 export type ApplyContext = {
   db: DbHandle['db'];
@@ -97,6 +103,10 @@ async function applyOne(
         return await applyCollectionItem(ctx, op, raw);
       case 'shares':
         return await applyShare(ctx, op, raw);
+      case 'notes':
+        return await applyNote(ctx, op, raw);
+      case 'comments':
+        return await applyComment(ctx, op, raw);
       default:
         return {
           table,
@@ -190,6 +200,16 @@ async function applyDelete(
     case 'shares':
       await ctx.db.delete(shares).where(eq(shares.id, id));
       break;
+    case 'notes': {
+      const outcome = await markNoteDeleted(ctx, id, now);
+      if (outcome !== 'ok') return outcome;
+      break;
+    }
+    case 'comments': {
+      const outcome = await markCommentDeleted(ctx, id, now);
+      if (outcome !== 'ok') return outcome;
+      break;
+    }
     default:
       return {
         table,

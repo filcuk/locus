@@ -53,6 +53,10 @@ Add a row when a dependency, asset, or data source is added; remove it when it g
 | `@babel/plugin-proposal-class-properties` | npm | MIT | Class fields companion for WatermelonDB decorators |
 | `maplibre-gl` | npm | BSD-3-Clause | MapLibre GL JS — web map renderer |
 | `@maplibre/maplibre-react-native` | npm | MIT | MapLibre React Native — Android map renderer |
+| `marked` | npm | MIT | Shared MD→HTML parser options (`packages/shared`); server public-page render |
+| `sanitize-html` | npm | MIT | Server-side HTML sanitiser for public markdown pages |
+| `react-native-marked` | npm | MIT | Client markdown renderer for entry descriptions (native + web) |
+| `react-native-svg` | npm | MIT | Peer of `react-native-marked` (inline SVG in markdown) |
 
 ## Assets
 
