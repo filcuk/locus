@@ -12,7 +12,7 @@ import {
 import { and, eq, gt, lte, ne, sql } from 'drizzle-orm';
 
 import type { DbHandle } from '../db/client.js';
-import { changeLog, collectionItems, places } from '../db/schema.js';
+import { changeLog, collectionItems, comments, places } from '../db/schema.js';
 import { getReadableWatermark } from './changeLog.js';
 import { can, type Principal } from './permissions.js';
 
@@ -181,6 +181,31 @@ async function mayViewEntity(
     }
     case 'shares':
       return true; // shares targeting the user are filtered in late-grant / payload
+    case 'notes':
+      return can(db, principal, 'view', { type: 'note', id });
+    case 'comments': {
+      const [row] = await db
+        .select({
+          targetType: comments.targetType,
+          targetId: comments.targetId,
+        })
+        .from(comments)
+        .where(eq(comments.id, id))
+        .limit(1);
+      if (!row) return false;
+      if (
+        row.targetType !== 'area' &&
+        row.targetType !== 'place' &&
+        row.targetType !== 'point' &&
+        row.targetType !== 'collection'
+      ) {
+        return false;
+      }
+      return can(db, principal, 'view', {
+        type: row.targetType,
+        id: row.targetId,
+      });
+    }
     default:
       return false;
   }

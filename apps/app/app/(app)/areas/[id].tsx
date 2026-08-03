@@ -1,8 +1,9 @@
-import { StubScreen } from '@/ui/StubScreen';
-import { t } from '@/i18n';
+import { useLocalSearchParams } from 'expo-router';
+
+import { EntryDetailScreen } from '@/features/entry';
 
 export default function AreaDetailScreen() {
-  return (
-    <StubScreen title={t('area.detail.title')} body={t('area.detail.stub')} />
-  );
+  const params = useLocalSearchParams<{ id: string }>();
+  const id = typeof params.id === 'string' ? params.id : '';
+  return <EntryDetailScreen kind="area" id={id} />;
 }
