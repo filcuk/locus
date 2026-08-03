@@ -1,6 +1,6 @@
 /**
- * Temporary owner until P1-B exposes the signed-in user id to local writers.
- * Not a sync credential — only stamps WatermelonDB `owner_id` for offline rows.
+ * Fallback owner stamp when no session user is available (unit tests / edge).
+ * Production signed-in writes should resolve `getSessionUser().id` instead.
  */
 export const LOCAL_OWNER_PLACEHOLDER =
   '00000000-0000-4000-8000-000000000001';
