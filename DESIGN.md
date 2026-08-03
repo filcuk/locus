@@ -239,6 +239,8 @@ Authoritative for `can(principal, action, resource)`. This table is the test fix
 
 Local-first bytes; upload API when online; metadata syncs like any other row. Server stores content-addressed files under the media volume and generates **thumbnail + medium derivatives** (clients must never fetch full-res for lists). Strip EXIF GPS on upload unless the user opts to use it for placement. Public links expose photos for the linked resource and its inherited children only.
 
+**ACL:** attaching a photo requires `create_child` on the target (owner or share `edit`). Viewing a photo follows target inheritance through `can()` (shares and public-link scope on the target and its ancestors; the photo's `owner_id` also wins). Edit and delete of a photo are owner-only — share `edit` on the parent does not grant edit over someone else's photo. `upload_state` transitions are defined in `packages/shared` (`UPLOAD_STATE_TRANSITIONS`); clients must gate rendering on `upload_state` and tolerate 404s when metadata precedes bytes.
+
 ---
 
 ## 5. Sync

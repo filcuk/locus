@@ -13,6 +13,7 @@ import { createCollectionsRoutes } from './routes/collections.js';
 import { createCommentsRoutes } from './routes/comments.js';
 import { createHealthRoutes } from './routes/health.js';
 import { createNotesRoutes } from './routes/notes.js';
+import { createPhotosRoutes } from './routes/photos.js';
 import { createPlacesRoutes } from './routes/places.js';
 import { createPointsRoutes } from './routes/points.js';
 import { createSyncRoutes } from './routes/sync.js';
@@ -44,6 +45,7 @@ export function createApp(handle: DbHandle, options: CreateAppOptions = {}) {
   app.route('/', createCollectionsRoutes(handle));
   app.route('/', createNotesRoutes(handle));
   app.route('/', createCommentsRoutes(handle));
+  app.route('/', createPhotosRoutes(handle));
   app.route('/', createSyncRoutes(handle));
 
   app.get('/', (c) =>

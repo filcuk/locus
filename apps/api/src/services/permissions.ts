@@ -19,6 +19,7 @@ import {
   areas,
   collections,
   notes,
+  photos,
   places,
   points,
   publicLinks,
@@ -32,7 +33,10 @@ export type ResourceType =
   | 'point'
   | 'collection'
   | 'note'
-  | 'tag';
+  | 'tag'
+  | 'photo';
+
+type ShareableResourceType = 'area' | 'place' | 'point' | 'collection';
 
 export type Principal =
   | { kind: 'anonymous' }
@@ -240,7 +244,43 @@ async function loadResource(
         inPublicLinkScope: false,
       };
     }
+    case 'photo': {
+      const [row] = await db.select().from(photos).where(eq(photos.id, ref.id)).limit(1);
+      if (!row) return null;
+      if (!isShareableType(row.targetType)) return null;
+      const target = await loadResource(db, {
+        type: row.targetType,
+        id: row.targetId,
+      });
+      const ancestorRefs: LoadedResource['ancestorRefs'] = target
+        ? [
+            { type: target.type as ShareableResourceType, id: target.id },
+            ...target.ancestorRefs,
+          ]
+        : [];
+      return {
+        type: 'photo',
+        id: row.id,
+        ownerId: row.ownerId,
+        authorId: null,
+        deletedAt: row.deletedAt,
+        // Public-link inherited children honour the target's visibility (DESIGN §4 Photos).
+        visibility: target?.visibility ?? null,
+        authorOnly: false,
+        ancestorRefs,
+        inPublicLinkScope: false,
+      };
+    }
   }
+}
+
+function isShareableType(value: string): value is ShareableResourceType {
+  return (
+    value === 'area' ||
+    value === 'place' ||
+    value === 'point' ||
+    value === 'collection'
+  );
 }
 
 function baseOwned(
@@ -269,19 +309,14 @@ async function resolveEffectiveShare(
   userId: string,
   resource: LoadedResource,
 ): Promise<SharePermission | null> {
-  if (
-    resource.type !== 'area' &&
-    resource.type !== 'place' &&
-    resource.type !== 'point' &&
-    resource.type !== 'collection'
-  ) {
-    return null;
+  // Shares live on area/place/point/collection. Photos inherit via ancestorRefs
+  // (DESIGN §4 Photos — target inheritance).
+  const targets: Array<{ type: string; id: string }> = [];
+  if (isShareableType(resource.type)) {
+    targets.push({ type: resource.type, id: resource.id });
   }
-
-  const targets: Array<{ type: string; id: string }> = [
-    { type: resource.type, id: resource.id },
-    ...resource.ancestorRefs,
-  ];
+  targets.push(...resource.ancestorRefs);
+  if (targets.length === 0) return null;
 
   const grants: SharePermission[] = [];
   for (const target of targets) {
