@@ -1,5 +1,6 @@
 import type { Database } from '@nozbe/watermelondb';
 
+import { getSessionUser } from '../../auth';
 import { createPointLocal } from '../../db';
 import type Point from '../../db/models/Point';
 import { requestSyncPush } from '../../sync/activeDriver';
@@ -15,7 +16,7 @@ export type CreateOfflinePointInput = {
   title: string;
   lat: number;
   lon: number;
-  /** Defaults to the local owner placeholder until P1-B session lands. */
+  /** Defaults to the signed-in user; tests may inject explicitly. */
   ownerId?: string;
   usePlaceholderCoords?: boolean;
 };
@@ -32,9 +33,13 @@ export async function createOfflinePoint(
   const usePlaceholder = input.usePlaceholderCoords === true;
   const lat = usePlaceholder ? PLACEHOLDER_COORDS.lat : input.lat;
   const lon = usePlaceholder ? PLACEHOLDER_COORDS.lon : input.lon;
+  const ownerId =
+    input.ownerId ??
+    (await getSessionUser())?.id ??
+    LOCAL_OWNER_PLACEHOLDER;
 
   const point = await createPointLocal(database, {
-    ownerId: input.ownerId ?? LOCAL_OWNER_PLACEHOLDER,
+    ownerId,
     title,
     lat,
     lon,
