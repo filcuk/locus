@@ -73,7 +73,17 @@ export const catalogue = {
   'new.stub': 'Type and parent picker arrives in P1.',
 
   'search.title': 'Search',
-  'search.stub': 'Search arrives in a later phase.',
+  'search.placeholder': 'Search titles, descriptions, tags',
+  'search.prompt': 'Type to search your local entries.',
+  'search.empty': 'No matching entries.',
+  'search.open': 'Search',
+  'search.kind.area': 'Area',
+  'search.kind.place': 'Place',
+  'search.kind.point': 'Point',
+  'search.kind.collection': 'Collection',
+  'search.match.title': 'title',
+  'search.match.description': 'description',
+  'search.match.tag': 'tag',
 
   'area.detail.title': 'Area',
   'area.detail.stub': 'Area detail arrives in P2.',
