@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it } from 'vitest';
 
-import { clearDeviceId, getDeviceId, setDeviceId } from './deviceId.js';
+import { clearDeviceId, getDeviceId, setDeviceId } from './deviceId';
 
 afterEach(() => {
   clearDeviceId();

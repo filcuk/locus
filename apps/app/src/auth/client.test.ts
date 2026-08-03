@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { clearServerUrl, setServerUrl } from '../config/server-url.js';
+import { clearServerUrl, setServerUrl } from '../config/server-url';
 import {
   AuthHttpError,
   clearDeviceIdForTests,
@@ -15,7 +15,7 @@ import {
   setSecureStorageForTests,
   clearSession,
   hasSession,
-} from './index.js';
+} from './index';
 
 const DEVICE = '018f0000-0000-7000-8000-0000000000aa';
 

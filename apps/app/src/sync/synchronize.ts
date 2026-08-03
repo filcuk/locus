@@ -17,19 +17,19 @@ import {
   type SyncPushResult,
 } from '@nozbe/watermelondb/sync';
 
-import type { AccessTokenGetter } from './auth.js';
-import { createAppSyncClient, type SyncClient } from './client.js';
-import { toServerCursor, toWatermelonTimestamp } from './cursor.js';
-import { getDeviceId } from './deviceId.js';
+import type { AccessTokenGetter } from './auth';
+import { createAppSyncClient, type SyncClient } from './client';
+import { toServerCursor, toWatermelonTimestamp } from './cursor';
+import { getDeviceId } from './deviceId';
 import {
   pullChangesToWatermelon,
   rejectedIdsFromPush,
   watermelonChangesToPush,
-} from './encode.js';
+} from './encode';
 import {
   getSyncStatusHooks,
   type SyncStatusHooks,
-} from './status.js';
+} from './status';
 
 const DEFAULT_MAX_PULL_REQUIRED_RETRIES = 3;
 

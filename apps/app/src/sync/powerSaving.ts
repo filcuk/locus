@@ -8,8 +8,8 @@
 
 import type { Database } from '@nozbe/watermelondb';
 
-import type { AccessTokenGetter } from './auth.js';
-import { runSynchronize, type SynchronizeOptions } from './synchronize.js';
+import type { AccessTokenGetter } from './auth';
+import { runSynchronize, type SynchronizeOptions } from './synchronize';
 
 export const DEFAULT_PUSH_DEBOUNCE_MS = 750;
 export const DEFAULT_PULL_INTERVAL_MS = 60_000;

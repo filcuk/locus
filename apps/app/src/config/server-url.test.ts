@@ -3,7 +3,7 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import {
   createMemorySecureStorage,
   setSecureStorageForTests,
-} from '../auth/secureStorage.js';
+} from '../auth/secureStorage';
 import {
   clearServerUrl,
   getServerUrl,

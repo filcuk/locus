@@ -4,7 +4,7 @@
  * start/stop. Never wipe local data if no driver is bound (signed out).
  */
 
-import type { PowerSavingDriver } from './powerSaving.js';
+import type { PowerSavingDriver } from './powerSaving';
 
 let active: PowerSavingDriver | null = null;
 

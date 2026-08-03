@@ -2,8 +2,8 @@ import { describe, expect, it, vi } from 'vitest';
 
 import { emptySyncChanges } from '@locus/shared';
 
-import { clearServerUrl, setServerUrl } from '../config/server-url.js';
-import { createAppSyncClient, createAuthedSyncFetch } from './client.js';
+import { clearServerUrl, setServerUrl } from '../config/server-url';
+import { createAppSyncClient, createAuthedSyncFetch } from './client';
 
 const USER = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa';
 const DEVICE = 'd1d1d1d1-d1d1-41d1-81d1-d1d1d1d1d1d1';

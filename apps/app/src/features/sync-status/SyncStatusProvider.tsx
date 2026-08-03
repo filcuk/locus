@@ -1,10 +1,10 @@
 import { type ReactNode, useEffect, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 
-import { subscribeConnectivity } from './connectivity.js';
-import { syncStatusController } from './controller.js';
-import { SyncStatusIndicator } from './SyncStatusIndicator.js';
-import type { SyncStatusSnapshot } from './types.js';
+import { subscribeConnectivity } from './connectivity';
+import { syncStatusController } from './controller';
+import { SyncStatusIndicator } from './SyncStatusIndicator';
+import type { SyncStatusSnapshot } from './types';
 
 /**
  * Owns connectivity subscription and mounts the indicator in app chrome.

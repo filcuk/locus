@@ -5,7 +5,7 @@
 
 import { AuthUserSchema, type AuthTokens, type AuthUser } from '@locus/shared';
 
-import { getSecureStorage } from './secureStorage.js';
+import { getSecureStorage } from './secureStorage';
 
 const ACCESS_TOKEN_KEY = 'locus.accessToken';
 const REFRESH_TOKEN_KEY = 'locus.refreshToken';

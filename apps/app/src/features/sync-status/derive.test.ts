@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { deriveSyncIndicatorState } from './derive.js';
+import { deriveSyncIndicatorState } from './derive';
 
 const base = {
   online: true,

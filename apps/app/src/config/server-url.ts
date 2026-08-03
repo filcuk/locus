@@ -8,7 +8,7 @@
  * serve the in-memory cache so call sites stay unified.
  */
 
-import { getSecureStorage } from '../auth/secureStorage.js';
+import { getSecureStorage } from '../auth/secureStorage';
 
 const STORAGE_KEY = 'locus.serverUrl';
 

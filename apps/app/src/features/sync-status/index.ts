@@ -1,14 +1,14 @@
-export { subscribeConnectivity } from './connectivity.js';
+export { subscribeConnectivity } from './connectivity';
 export {
   createSyncStatusController,
   syncStatusController,
   type SyncStatusController,
-} from './controller.js';
-export { deriveSyncIndicatorState } from './derive.js';
-export { SyncStatusIndicator } from './SyncStatusIndicator.js';
-export { SyncStatusProvider } from './SyncStatusProvider.js';
+} from './controller';
+export { deriveSyncIndicatorState } from './derive';
+export { SyncStatusIndicator } from './SyncStatusIndicator';
+export { SyncStatusProvider } from './SyncStatusProvider';
 export type {
   SyncIndicatorState,
   SyncPhase,
   SyncStatusSnapshot,
-} from './types.js';
+} from './types';

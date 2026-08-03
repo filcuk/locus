@@ -4,10 +4,10 @@
  * this file is the Vitest / tsc fallback (web + injectable memory).
  */
 
-import { createPlatformSecureStorage } from './secureStorage.web.js';
-import type { SecureStorage } from './secureStorageTypes.js';
+import { createPlatformSecureStorage } from './secureStorage.web';
+import type { SecureStorage } from './secureStorageTypes';
 
-export type { SecureStorage } from './secureStorageTypes.js';
+export type { SecureStorage } from './secureStorageTypes';
 
 let override: SecureStorage | null = null;
 let platformStorage: SecureStorage | null = null;

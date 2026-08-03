@@ -1,12 +1,12 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
-import { syncStatusController } from '../features/sync-status/controller.js';
+import { syncStatusController } from '../features/sync-status/controller';
 import {
   bindSyncStatusHooks,
   getSyncStatusHooks,
   silenceSyncStatusHooks,
   unbindSyncStatusHooks,
-} from './status.js';
+} from './status';
 
 afterEach(() => {
   unbindSyncStatusHooks();
