@@ -16,6 +16,7 @@ import {
 } from '@/features/home';
 import { t } from '@/i18n';
 import { MapView } from '@/map';
+import { refreshSync } from '@/sync';
 
 /** Home — map + hierarchical entry list (DESIGN §8). */
 export default function HomeScreen() {
@@ -36,7 +37,7 @@ export default function HomeScreen() {
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
     try {
-      await recompute();
+      await Promise.all([recompute(), refreshSync()]);
     } finally {
       setRefreshing(false);
     }

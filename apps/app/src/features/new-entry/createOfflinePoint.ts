@@ -2,7 +2,7 @@ import type { Database } from '@nozbe/watermelondb';
 
 import { createPointLocal } from '../../db';
 import type Point from '../../db/models/Point';
-
+import { requestSyncPush } from '../../sync/activeDriver';
 
 import {
   LOCAL_OWNER_PLACEHOLDER,
@@ -22,7 +22,7 @@ export type CreateOfflinePointInput = {
 
 /**
  * Creates a standalone point in WatermelonDB only.
- * Sync is a later side effect — callers must not await the network.
+ * Sync is a fire-and-forget side effect — callers must not await the network.
  */
 export async function createOfflinePoint(
   database: Database,
@@ -33,7 +33,7 @@ export async function createOfflinePoint(
   const lat = usePlaceholder ? PLACEHOLDER_COORDS.lat : input.lat;
   const lon = usePlaceholder ? PLACEHOLDER_COORDS.lon : input.lon;
 
-  return createPointLocal(database, {
+  const point = await createPointLocal(database, {
     ownerId: input.ownerId ?? LOCAL_OWNER_PLACEHOLDER,
     title,
     lat,
@@ -42,4 +42,6 @@ export async function createOfflinePoint(
       ? POSITION_SOURCE_PLACEHOLDER
       : POSITION_SOURCE_MANUAL,
   });
+  requestSyncPush();
+  return point;
 }

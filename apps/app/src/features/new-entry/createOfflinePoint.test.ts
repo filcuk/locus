@@ -1,6 +1,6 @@
 import { Database } from '@nozbe/watermelondb';
 import LokiJSAdapter from '@nozbe/watermelondb/adapters/lokijs';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 
 import { modelClasses } from '../../db/models';
 import { schema } from '../../db/schema';
@@ -13,6 +13,12 @@ import {
 } from './constants';
 import { createOfflinePoint } from './createOfflinePoint';
 import { parseCoords } from './parseCoords';
+
+const requestSyncPush = vi.fn();
+
+vi.mock('../../sync/activeDriver', () => ({
+  requestSyncPush: () => requestSyncPush(),
+}));
 
 function memoryDatabase(): Database {
   const adapter = new LokiJSAdapter({
@@ -28,6 +34,7 @@ function memoryDatabase(): Database {
 
 describe('createOfflinePoint', () => {
   it('writes a standalone point with placeholder coords without a parent', async () => {
+    requestSyncPush.mockClear();
     const db = memoryDatabase();
     const point = await createOfflinePoint(db, {
       title: '  Camp  ',
@@ -43,6 +50,7 @@ describe('createOfflinePoint', () => {
     expect(point.placeId).toBeNull();
     expect(point.areaId).toBeNull();
     expect(point.positionSource).toBe(POSITION_SOURCE_PLACEHOLDER);
+    expect(requestSyncPush).toHaveBeenCalledOnce();
 
     const fetched = await db.get('points').find(point.id);
     expect(fetched).toBeTruthy();
