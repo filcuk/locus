@@ -9,6 +9,7 @@ import { runMigrations } from './db/migrate.js';
 import { env, loadEnv } from './env.js';
 import { createAreasRoutes } from './routes/areas.js';
 import { createAuthRoutes } from './routes/auth.js';
+import { createCollectionsRoutes } from './routes/collections.js';
 import { createHealthRoutes } from './routes/health.js';
 import { createPlacesRoutes } from './routes/places.js';
 import { createPointsRoutes } from './routes/points.js';
@@ -38,6 +39,7 @@ export function createApp(handle: DbHandle, options: CreateAppOptions = {}) {
   app.route('/', createAreasRoutes(handle));
   app.route('/', createPlacesRoutes(handle));
   app.route('/', createPointsRoutes(handle));
+  app.route('/', createCollectionsRoutes(handle));
   app.route('/', createSyncRoutes(handle));
 
   app.get('/', (c) =>

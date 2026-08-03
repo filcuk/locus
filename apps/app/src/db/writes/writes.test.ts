@@ -5,6 +5,11 @@ import { describe, expect, it } from 'vitest';
 import { modelClasses } from '../models';
 import { schema } from '../schema';
 import { createAreaLocal, softDeleteAreaLocal } from './areas';
+import {
+  createCollectionItemLocal,
+  createCollectionLocal,
+  softDeleteCollectionLocal,
+} from './collections';
 import { createPlaceLocal } from './places';
 import { createPointLocal } from './points';
 
@@ -126,5 +131,36 @@ describe('offline place/point writers (WatermelonDB)', () => {
     expect((nestedAfter as { deletedAt: Date | null }).deletedAt).toBeTruthy();
     const directAfter = await db.get('points').find(direct.id);
     expect((directAfter as { deletedAt: Date | null }).deletedAt).toBeTruthy();
+  });
+
+  it('creates a collection with members and cascades soft-delete', async () => {
+    const db = memoryDatabase();
+    const collection = await createCollectionLocal(db, {
+      ownerId: OWNER,
+      title: 'Offline collection',
+    });
+    expect(collection.title).toBe('Offline collection');
+
+    const point = await createPointLocal(db, {
+      ownerId: OWNER,
+      title: 'Member',
+      lat: 1,
+      lon: 2,
+    });
+    const item = await createCollectionItemLocal(db, {
+      collectionId: collection.id,
+      itemType: 'point',
+      itemId: point.id,
+    });
+    expect(item.collectionId).toBe(collection.id);
+
+    await softDeleteCollectionLocal(db, collection);
+
+    const collAfter = await db.get('collections').find(collection.id);
+    expect((collAfter as { deletedAt: Date | null }).deletedAt).toBeTruthy();
+    const itemAfter = await db.get('collection_items').find(item.id);
+    expect((itemAfter as { deletedAt: Date | null }).deletedAt).toBeTruthy();
+    const pointAfter = await db.get('points').find(point.id);
+    expect((pointAfter as { deletedAt: Date | null }).deletedAt).toBeNull();
   });
 });
