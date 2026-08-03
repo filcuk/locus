@@ -54,7 +54,18 @@ export default function HomeScreen() {
         }
       >
         <View style={styles.header}>
-          <Text style={styles.title}>{t('home.title')}</Text>
+          <View style={styles.titleRow}>
+            <Text style={styles.title}>{t('home.title')}</Text>
+            <Link href="/search" asChild>
+              <Pressable
+                accessibilityRole="link"
+                accessibilityLabel={t('search.open')}
+                testID="home-search"
+              >
+                <Text style={styles.searchLink}>{t('search.open')}</Text>
+              </Pressable>
+            </Link>
+          </View>
           <View style={styles.tabs}>
             <Text style={[styles.tab, styles.tabActive]}>{t('home.entriesTab')}</Text>
             <Link href="/collections" asChild>
@@ -100,9 +111,19 @@ const styles = StyleSheet.create({
     gap: 8,
     paddingTop: 16,
   },
+  titleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
   title: {
     fontSize: 20,
     fontWeight: '600',
+    color: '#18181b',
+  },
+  searchLink: {
+    fontSize: 15,
+    fontWeight: '500',
     color: '#18181b',
   },
   tabs: {
