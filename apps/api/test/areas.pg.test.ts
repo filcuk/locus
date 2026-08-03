@@ -228,6 +228,32 @@ describe('areas domain + sync apply (Testcontainers)', () => {
     expect(missing.status).toBe(404);
   });
 
+  it('REST create rejects polygons over the vertex cap after simplify', async () => {
+    const unique = 200;
+    const ring: [number, number][] = [];
+    for (let i = 0; i < unique; i++) {
+      const a = (2 * Math.PI * i) / unique;
+      ring.push([Math.cos(a), Math.sin(a)]);
+    }
+    const first = ring[0]!;
+    ring.push([first[0], first[1]]);
+
+    const id = 'dddddddd-dddd-4ddd-8ddd-dddddddddddd';
+    const body = {
+      ...areaBody(id, OWNER, 'Too many verts'),
+      geom_geojson: { type: 'Polygon' as const, coordinates: [ring] },
+    };
+
+    const created = await app.request('/areas', {
+      method: 'POST',
+      headers: headers(OWNER),
+      body: JSON.stringify(body),
+    });
+    expect(created.status).toBe(422);
+    const err = (await created.json()) as { error?: string; message?: string };
+    expect(`${err.error ?? ''} ${err.message ?? ''}`).toMatch(/vertices|VALIDATION/i);
+  });
+
   it('sync push applies area and pull expands cascade soft-delete', async () => {
     const areaId = 'a2a2a2a2-a2a2-42a2-82a2-a2a2a2a2a2a2';
     const placeId = 'b2b2b2b2-b2b2-42b2-82b2-b2b2b2b2b2b2';

@@ -186,10 +186,10 @@ Client tables mirror these plus WatermelonDB's own bookkeeping columns (`_status
 
 ### Area geometry
 
-- **Source of truth:** GeoJSON Polygon/MultiPolygon; free-shape drawing on the map.
+- **Source of truth:** GeoJSON Polygon/MultiPolygon; drawn on the map by **tap-to-set vertices** (not freehand — see [§8](#8-client)).
 - **Derived bbox** columns for viewport queries; never treat bbox as the true boundary.
 - Geometric containment (point-in-polygon in TypeScript via Turf, with bbox as the SQL pre-filter) answers "what falls inside this shape". It is **not** membership: a point belongs to an area only when `area_id` is set. A point may sit inside an area's polygon while belonging to nothing, and the map should not imply otherwise.
-- Validate rings; simplify (Douglas-Peucker) and cap vertices so sync payloads stay small.
+- Validate rings; simplify (Douglas-Peucker) and cap vertices so sync payloads stay small. Defaults: **128** vertices per ring, simplify tolerance **`0.00005`°** WGS84 (~5 m). Both are env-configurable (`POLYGON_MAX_VERTICES_PER_RING`, `POLYGON_SIMPLIFY_TOLERANCE_DEG`; see [§7](#7-backend)); a future admin UI may expose them. Operators who prefer a coarser simplify (e.g. ≈10 m ≈ `0.0001`°) set the env — the shipped default stays Option B.
 
 ### Sharing and ACL
 
@@ -453,6 +453,8 @@ No `utils/` or `helpers/` catch-alls: a module that cannot be named after what i
 | `ACCESS_TOKEN_TTL` / `REFRESH_TOKEN_TTL` | Session TTLs (refresh must tolerate long offline periods) |
 | `MEDIA_ROOT` | e.g. `/data/media` |
 | `MAP_STYLE_URL` | Tile style served to clients; unset ⇒ the OpenFreeMap public instance. May embed a key if the operator substitutes a keyed provider |
+| `POLYGON_MAX_VERTICES_PER_RING` | Max vertices per polygon ring after simplify/cap; unset ⇒ `128`. Future admin UI may expose this |
+| `POLYGON_SIMPLIFY_TOLERANCE_DEG` | Douglas-Peucker tolerance in degrees WGS84; unset ⇒ `0.00005` (~5 m). Operators may raise toward ≈10 m (`~0.0001`) without a code change. Future admin UI may expose this |
 | `CORS_ORIGINS` | Web origins for this instance |
 | `PUBLIC_BASE_URL` | Link generation |
 | `SMTP_*` | Password reset, verification, invites |
@@ -522,7 +524,7 @@ Photo gallery header, then title and **markdown** description, tag chips, visit 
 - **Tags:** curated `system` seed catalogue plus the viewer's own private tags. On a shared entry, applied tags (including another user's private tags) are visible as chips; those private tags cannot be assigned to the viewer's own entries or appear in their picker/filters.
 - **Markdown must be sanitised**, and on `p/[token]` it renders to anonymous visitors, so sanitisation happens server-side in the preview shell rather than only in the client renderer.
 
-**Polygon drawing** is a real workstream, not a library call: `terra-draw` or `mapbox-gl-draw` covers web, but MapLibre React Native has no draw tool, so native needs custom gestures over `ShapeSource`/`FillLayer`. Geometry maths lives in `packages/shared` so both platforms share one implementation.
+**Polygon drawing** (P2-B) is a real workstream, not a library call: `terra-draw` or `mapbox-gl-draw` covers web, but MapLibre React Native has no draw tool, so native needs custom gestures over `ShapeSource`/`FillLayer`. Geometry maths lives in `packages/shared` so both platforms share one implementation. **Draw style:** tap to set each vertex (line point), then close the ring — **not** freehand stroke sampling. (Maintainer Planka Option A, 2026-08-03.)
 
 ---
 
@@ -619,7 +621,6 @@ P0 also carries two de-risking spikes, both cheap now and expensive later:
 
 - **Distribution:** Play Store vs APK/F-Droid (drives signing, updates, background-location policy). Needed before P7.
 - **OTA updates:** self-hosted `expo-updates` or none.
-- **Polygon limits:** vertex cap and simplification tolerance. Needed before P2.
 - **i18n library:** unchosen; strings are externalised by key from the start regardless, so the choice stays cheap.
 - **Public browse:** whether `public` visibility ever gets a discovery index (and the moderation that implies).
 
@@ -636,6 +637,9 @@ P0 also carries two de-risking spikes, both cheap now and expensive later:
 | Notes vs comments | Notes are a personal visit timeline, private to their author forever; comments are collaborative and follow the target's view permission |
 | Visits | A note with `visited_at`; private, so visit counts are per-viewer and derived on read |
 | Tags (P2-D) | Curated `system` seed catalogue (random hex colours for now; icons later) with categories — **type:** monument \| view \| trail \| natural_feature; **terrain:** easy \| moderate \| hard \| impossible; **rurality:** urban \| suburban \| rural \| remote; **beauty:** unrefined \| plain \| moderate \| exquisite; **privacy:** bustling \| populated \| quiet \| secluded. Any non-anonymous user may **create** `user`-scoped tags (local to that user). Others cannot **use** (assign) another user's tags. Private tag *definitions* stay invisible in catalogues/pickers/filters; on an item **shared with them**, viewers **see** tags applied to that item but cannot use/find those user tags on their own entries. **Retire:** removed tags cannot be newly assigned but remain on old entries; on remove, offer a choice to strip the tag from all entries. (Maintainer chat 2026-08-03.) |
+| Polygon limits | Defaults: **128** vertices per ring; Douglas-Peucker simplify **`0.00005`°** (~5 m). Env-configurable via `POLYGON_MAX_VERTICES_PER_RING` and `POLYGON_SIMPLIFY_TOLERANCE_DEG` (future admin UI). Operators may set simplify ≈10 m via env; defaults remain B. (Option B; maintainer chat 2026-08-03; earlier Planka note of ~10 m does not override the chat default.) |
+| Polygon draw UX (P2-B) | Tap to set each vertex (not freehand). Web and native share this interaction model; native implements it with custom MapLibre gestures. (Planka Option A; filcuk 2026-08-03.) |
+| Photo attach ACL | Attaching a photo requires `create_child` on the target (not `comment`); view follows the target's `view` permission. Detail in [§4 Photos](#photos). (Maintainer chat 2026-08-03; aligns with PR #48.) |
 | Home ordering | Hierarchy preserved; roots sorted by distance to their nearest descendant |
 | One-shot Home GPS | `expo-location` foreground-only for Home distance ordering; permission requested at use with a reason; no background or continuous tracking before P7 |
 | Notifications | Optional operator-supplied webhook; we bundle no notifier and add no container |

@@ -34,7 +34,7 @@ export const LongitudeSchema = z.number().min(-180).max(180);
 
 type LonLat = [number, number];
 
-/** GeoJSON rings must be closed (first == last). Vertex caps are §13 / P2-B. */
+/** GeoJSON rings must be closed (first == last). Vertex caps: prepareAreaGeometry (DESIGN §4). */
 function isClosedRing(ring: LonLat[]): boolean {
   const first = ring[0];
   const last = ring[ring.length - 1];

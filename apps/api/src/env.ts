@@ -1,3 +1,7 @@
+import {
+  DEFAULT_POLYGON_MAX_VERTICES_PER_RING,
+  DEFAULT_POLYGON_SIMPLIFY_TOLERANCE_DEG,
+} from '@locus/shared';
 import { z } from 'zod';
 
 /** OpenFreeMap Liberty — default when MAP_STYLE_URL is unset (DESIGN §7 / §9). */
@@ -11,6 +15,17 @@ const EnvSchema = z.object({
   REFRESH_TOKEN_TTL: z.string().min(1).default('720h'),
   MEDIA_ROOT: z.string().min(1),
   MAP_STYLE_URL: z.string().url().default(DEFAULT_MAP_STYLE_URL),
+  /** DESIGN §4 / §7 — unset ⇒ shared default (128). */
+  POLYGON_MAX_VERTICES_PER_RING: z.coerce
+    .number()
+    .int()
+    .positive()
+    .default(DEFAULT_POLYGON_MAX_VERTICES_PER_RING),
+  /** DESIGN §4 / §7 — unset ⇒ shared default (0.00005°). */
+  POLYGON_SIMPLIFY_TOLERANCE_DEG: z.coerce
+    .number()
+    .positive()
+    .default(DEFAULT_POLYGON_SIMPLIFY_TOLERANCE_DEG),
   CORS_ORIGINS: z.string().default('*'),
   PUBLIC_BASE_URL: z.string().url().default('http://localhost:8000'),
   PORT: z.coerce.number().int().positive().default(8000),
@@ -43,6 +58,8 @@ export function loadEnv(raw: NodeJS.ProcessEnv = process.env): Env {
     REFRESH_TOKEN_TTL: emptyToUndefined(raw['REFRESH_TOKEN_TTL']),
     MEDIA_ROOT: raw['MEDIA_ROOT'],
     MAP_STYLE_URL: emptyToUndefined(raw['MAP_STYLE_URL']),
+    POLYGON_MAX_VERTICES_PER_RING: emptyToUndefined(raw['POLYGON_MAX_VERTICES_PER_RING']),
+    POLYGON_SIMPLIFY_TOLERANCE_DEG: emptyToUndefined(raw['POLYGON_SIMPLIFY_TOLERANCE_DEG']),
     CORS_ORIGINS: emptyToUndefined(raw['CORS_ORIGINS']),
     PUBLIC_BASE_URL: emptyToUndefined(raw['PUBLIC_BASE_URL']),
     PORT: emptyToUndefined(raw['PORT']),
