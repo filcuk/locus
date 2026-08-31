@@ -8,9 +8,9 @@ const workspaceRoot = path.resolve(projectRoot, '../..');
 /** @type {import('expo/metro-config').MetroConfig} */
 const config = getDefaultConfig(projectRoot);
 
-// pnpm monorepo: watch the workspace root so shared packages resolve,
-// and keep hierarchical lookup so Expo's nested deps (e.g. @expo/log-box) work.
-config.watchFolders = [workspaceRoot];
+// pnpm monorepo: watch only the shared source tree. Watching the whole
+// workspace also crawls sibling worktrees and their node_modules on Windows.
+config.watchFolders = [path.resolve(workspaceRoot, 'packages/shared')];
 config.resolver.nodeModulesPaths = [
   path.resolve(projectRoot, 'node_modules'),
   path.resolve(workspaceRoot, 'node_modules'),
