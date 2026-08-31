@@ -602,18 +602,39 @@ async function applyCollection(
     };
   }
   const row = parsed.data;
+  let ownerId = row.owner_id;
+  let createdAt = row.created_at;
   if (op === 'update') {
     await assertCan(ctx.db, ctx.principal, 'edit', { type: 'collection', id: row.id });
+    const [existing] = await ctx.db
+      .select({
+        ownerId: collections.ownerId,
+        createdAt: collections.createdAt,
+        deletedAt: collections.deletedAt,
+      })
+      .from(collections)
+      .where(eq(collections.id, row.id))
+      .limit(1);
+    if (!existing || existing.deletedAt) {
+      return {
+        table: 'collections',
+        id: row.id,
+        code: 'VALIDATION_FAILED',
+        message: 'collection not found',
+      };
+    }
+    ownerId = existing.ownerId;
+    createdAt = existing.createdAt;
   }
 
   const now = new Date().toISOString();
   const values = {
     id: row.id,
-    ownerId: op === 'create' ? ctx.principal.userId : row.owner_id,
+    ownerId: op === 'create' ? ctx.principal.userId : ownerId,
     title: row.title,
     description: row.description ?? null,
     visibility: row.visibility,
-    createdAt: row.created_at,
+    createdAt,
     updatedAt: now,
     updatedBy: ctx.principal.userId,
     deletedAt: row.deleted_at ?? null,

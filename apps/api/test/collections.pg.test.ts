@@ -135,11 +135,12 @@ describe('collections domain + sync apply (Testcontainers)', () => {
     const updated = await app.request('/collections/' + COLLECTION, {
       method: 'PUT',
       headers: headers(OWNER),
-      body: JSON.stringify(collectionBody(COLLECTION, OWNER, 'Updated trip')),
+      body: JSON.stringify(collectionBody(COLLECTION, OTHER, 'Updated trip')),
     });
     expect(updated.status).toBe(200);
-    const updatedBody = (await updated.json()) as { title: string };
+    const updatedBody = (await updated.json()) as { title: string; owner_id: string };
     expect(updatedBody.title).toBe('Updated trip');
+    expect(updatedBody.owner_id).toBe(OWNER);
 
     const del = await app.request('/collections/' + COLLECTION, {
       method: 'DELETE',

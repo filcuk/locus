@@ -4,7 +4,9 @@ import { getSessionUser } from '../../auth';
 import {
   createCollectionItemLocal,
   createCollectionLocal,
+  softDeleteCollectionLocal,
   softDeleteCollectionItemLocal,
+  updateCollectionLocal,
 } from '../../db';
 import type Collection from '../../db/models/Collection';
 import type CollectionItem from '../../db/models/CollectionItem';
@@ -53,6 +55,37 @@ export async function addOfflineCollectionMember(
   });
   requestSyncPush();
   return item;
+}
+
+export type UpdateOfflineCollectionInput = {
+  title: string;
+};
+
+export async function updateOfflineCollection(
+  database: Database,
+  collection: Collection,
+  input: UpdateOfflineCollectionInput,
+): Promise<Collection> {
+  const title = input.title.trim();
+  if (title.length === 0) {
+    throw new Error('Collection title is required');
+  }
+
+  const updatedBy = (await getSessionUser())?.id ?? LOCAL_OWNER_PLACEHOLDER;
+  const updated = await updateCollectionLocal(database, collection, {
+    title,
+    updatedBy,
+  });
+  requestSyncPush();
+  return updated;
+}
+
+export async function deleteOfflineCollection(
+  database: Database,
+  collection: Collection,
+): Promise<void> {
+  await softDeleteCollectionLocal(database, collection);
+  requestSyncPush();
 }
 
 export async function removeOfflineCollectionMember(
