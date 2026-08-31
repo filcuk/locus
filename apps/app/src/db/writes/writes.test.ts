@@ -10,6 +10,7 @@ import {
   createCollectionItemLocal,
   createCollectionLocal,
   softDeleteCollectionLocal,
+  updateCollectionLocal,
 } from './collections';
 import { createPlaceLocal } from './places';
 import { createPointLocal } from './points';
@@ -142,6 +143,13 @@ describe('offline place/point writers (WatermelonDB)', () => {
       title: 'Offline collection',
     });
     expect(collection.title).toBe('Offline collection');
+
+    const updated = await updateCollectionLocal(db, collection, {
+      title: 'Updated collection',
+      updatedBy: OWNER,
+    });
+    expect(updated.title).toBe('Updated collection');
+    expect(updated.updatedBy).toBe(OWNER);
 
     const point = await createPointLocal(db, {
       ownerId: OWNER,

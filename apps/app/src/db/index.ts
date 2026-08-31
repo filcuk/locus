@@ -26,6 +26,7 @@ export {
   retireUserTagLocal,
   softDeleteCollectionLocal,
   softDeleteCollectionItemLocal,
+  updateCollectionLocal,
   softDeleteCommentLocal,
   softDeleteNoteLocal,
   softDeletePlaceLocal,

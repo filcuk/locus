@@ -16,6 +16,13 @@ export type CreateCollectionLocalInput = {
   updatedBy?: string;
 };
 
+export type UpdateCollectionLocalInput = {
+  title?: string;
+  description?: string | null;
+  visibility?: Visibility;
+  updatedBy: string;
+};
+
 export type CreateCollectionItemLocalInput = {
   id?: string;
   collectionId: string;
@@ -42,6 +49,24 @@ export async function createCollectionLocal(
       row.updatedAt = new Date(now);
       row.updatedBy = updatedBy;
       row.deletedAt = null;
+    }),
+  );
+}
+
+export async function updateCollectionLocal(
+  database: Database,
+  collection: Collection,
+  input: UpdateCollectionLocalInput,
+): Promise<Collection> {
+  const now = new Date();
+
+  return database.write(async () =>
+    collection.update((row) => {
+      if (input.title !== undefined) row.title = input.title;
+      if (input.description !== undefined) row.description = input.description;
+      if (input.visibility !== undefined) row.visibility = input.visibility;
+      row.updatedAt = now;
+      row.updatedBy = input.updatedBy;
     }),
   );
 }

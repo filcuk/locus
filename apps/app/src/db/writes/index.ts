@@ -2,10 +2,12 @@ export { createAreaLocal, softDeleteAreaLocal, type CreateAreaLocalInput } from 
 export {
   createCollectionLocal,
   createCollectionItemLocal,
+  updateCollectionLocal,
   softDeleteCollectionLocal,
   softDeleteCollectionItemLocal,
   type CreateCollectionLocalInput,
   type CreateCollectionItemLocalInput,
+  type UpdateCollectionLocalInput,
 } from './collections';
 export {
   createCommentLocal,

@@ -1,17 +1,20 @@
 import { useDatabase } from '@nozbe/watermelondb/hooks';
-import { Link, useLocalSearchParams } from 'expo-router';
-import { useMemo } from 'react';
+import { Link, useLocalSearchParams, useRouter } from 'expo-router';
+import { useState } from 'react';
 import {
   Pressable,
   ScrollView,
   StyleSheet,
   Text,
+  TextInput,
   View,
 } from 'react-native';
 
 import {
   addOfflineCollectionMember,
+  deleteOfflineCollection,
   removeOfflineCollectionMember,
+  updateOfflineCollection,
   useCollectionDetail,
   type CollectionMemberKind,
 } from '@/features/collections';
@@ -23,13 +26,15 @@ export default function CollectionDetailScreen() {
   const params = useLocalSearchParams<{ id: string }>();
   const collectionId = typeof params.id === 'string' ? params.id : '';
   const database = useDatabase();
+  const router = useRouter();
   const { collection, members, addable, loading } =
     useCollectionDetail(collectionId);
-
-  const itemsById = useMemo(() => {
-    // Membership models for remove are re-fetched via softDelete helper using id.
-    return new Map(members.map((m) => [m.membershipId, m]));
-  }, [members]);
+  const [editing, setEditing] = useState(false);
+  const [title, setTitle] = useState('');
+  const [editError, setEditError] = useState<string | null>(null);
+  const [saving, setSaving] = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
   if (!collectionId) {
     return (
@@ -60,6 +65,35 @@ export default function CollectionDetailScreen() {
     );
   }
 
+  const onEdit = () => {
+    if (!collection) return;
+    setTitle(collection.title);
+    setEditError(null);
+    setEditing(true);
+  };
+
+  const onSave = () => {
+    if (!collection || saving) return;
+    setSaving(true);
+    setEditError(null);
+    void updateOfflineCollection(database, collection, { title })
+      .then(() => setEditing(false))
+      .catch(() => setEditError(t('collection.detail.editError')))
+      .finally(() => setSaving(false));
+  };
+
+  const onDelete = () => {
+    if (!collection || deleting) return;
+    if (!confirmDelete) {
+      setConfirmDelete(true);
+      return;
+    }
+    setDeleting(true);
+    void deleteOfflineCollection(database, collection)
+      .then(() => router.replace('/collections'))
+      .catch(() => setDeleting(false));
+  };
+
   const onRemove = (membershipId: string) => {
     void database
       .get<CollectionItem>('collection_items')
@@ -81,7 +115,82 @@ export default function CollectionDetailScreen() {
       contentContainerStyle={styles.content}
       testID="collection-detail"
     >
-      <Text style={styles.title}>{collection.title}</Text>
+      {editing ? (
+        <View style={styles.editBox} testID="collection-edit">
+          <Text style={styles.label}>{t('collection.detail.editTitle')}</Text>
+          <TextInput
+            style={styles.input}
+            value={title}
+            onChangeText={setTitle}
+            placeholder={t('collection.detail.editPlaceholder')}
+            editable={!saving}
+            testID="collection-edit-title"
+          />
+          {editError ? <Text style={styles.error}>{editError}</Text> : null}
+          <View style={styles.actions}>
+            <Pressable
+              onPress={() => {
+                setEditing(false);
+                setEditError(null);
+              }}
+              disabled={saving}
+              accessibilityRole="button"
+            >
+              <Text style={styles.secondaryAction}>{t('collection.detail.cancel')}</Text>
+            </Pressable>
+            <Pressable
+              onPress={onSave}
+              disabled={saving}
+              accessibilityRole="button"
+              testID="collection-edit-submit"
+            >
+              <Text style={styles.primaryAction}>{t('collection.detail.save')}</Text>
+            </Pressable>
+          </View>
+        </View>
+      ) : (
+        <View style={styles.header}>
+          <Text style={styles.title}>{collection.title}</Text>
+          <Pressable
+            onPress={onEdit}
+            accessibilityRole="button"
+            testID="collection-edit-open"
+          >
+            <Text style={styles.action}>{t('collection.detail.edit')}</Text>
+          </Pressable>
+        </View>
+      )}
+
+      {confirmDelete ? (
+        <View style={styles.deleteBox} testID="collection-delete-confirm">
+          <Text style={styles.meta}>{t('collection.detail.deleteConfirm')}</Text>
+          <View style={styles.actions}>
+            <Pressable
+              onPress={() => setConfirmDelete(false)}
+              disabled={deleting}
+              accessibilityRole="button"
+            >
+              <Text style={styles.secondaryAction}>{t('collection.detail.deleteCancel')}</Text>
+            </Pressable>
+            <Pressable
+              onPress={onDelete}
+              disabled={deleting}
+              accessibilityRole="button"
+              testID="collection-delete-submit"
+            >
+              <Text style={styles.dangerAction}>{t('collection.detail.deleteAction')}</Text>
+            </Pressable>
+          </View>
+        </View>
+      ) : (
+        <Pressable
+          onPress={onDelete}
+          accessibilityRole="button"
+          testID="collection-delete-open"
+        >
+          <Text style={styles.dangerAction}>{t('collection.detail.delete')}</Text>
+        </Pressable>
+      )}
 
       <Text style={styles.section}>{t('collection.detail.members')}</Text>
       {members.length === 0 ? (
@@ -142,8 +251,6 @@ export default function CollectionDetailScreen() {
         </View>
       )}
 
-      {/* Keep map referenced so unused-var lint stays quiet if tree-shaken. */}
-      {itemsById.size < 0 ? null : null}
     </ScrollView>
   );
 }
@@ -169,6 +276,56 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#18181b',
     marginBottom: 8,
+  },
+  header: {
+    gap: 8,
+  },
+  editBox: {
+    gap: 8,
+    paddingBottom: 8,
+  },
+  deleteBox: {
+    gap: 8,
+    paddingVertical: 8,
+  },
+  label: {
+    fontSize: 13,
+    fontWeight: '500',
+    color: '#3f3f46',
+  },
+  input: {
+    borderWidth: 1,
+    borderColor: '#d4d4d8',
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    fontSize: 16,
+    backgroundColor: '#fff',
+    color: '#18181b',
+  },
+  error: {
+    fontSize: 13,
+    color: '#b91c1c',
+  },
+  actions: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    gap: 16,
+  },
+  secondaryAction: {
+    fontSize: 15,
+    color: '#71717a',
+    fontWeight: '500',
+  },
+  primaryAction: {
+    fontSize: 15,
+    color: '#18181b',
+    fontWeight: '600',
+  },
+  dangerAction: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#b91c1c',
   },
   section: {
     fontSize: 14,
