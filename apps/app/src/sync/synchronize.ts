@@ -8,7 +8,13 @@
  * - Status hooks call P1-F begin/end/error
  */
 
-import { newEntityId, SyncErrorCodes, SyncHttpError } from '@locus/shared';
+import {
+  newEntityId,
+  SyncCancelledError,
+  SyncErrorCodes,
+  SyncHttpError,
+  type SyncProgress,
+} from '@locus/shared';
 import type { Database } from '@nozbe/watermelondb';
 import {
   synchronize as watermelonSynchronize,
@@ -47,6 +53,10 @@ export type SynchronizeOptions = {
   status?: SyncStatusHooks;
   /** Max full synchronize() attempts after PULL_REQUIRED / CURSOR_TOO_OLD. */
   maxRetries?: number;
+  /** Cancels the current pass without touching local data. */
+  signal?: AbortSignal;
+  /** Reports transport attempts to the status owner. */
+  onProgress?: (progress: SyncProgress) => void;
   /** Clear lastPulledAt — injected for CURSOR_TOO_OLD tests. */
   resetCursor?: (database: Database) => Promise<void>;
 };
@@ -71,7 +81,7 @@ export async function runSynchronize(
   const synchronizeImpl = options.synchronizeImpl ?? watermelonSynchronize;
   const maxRetries = options.maxRetries ?? DEFAULT_MAX_PULL_REQUIRED_RETRIES;
   const resetCursor = options.resetCursor ?? defaultResetCursor;
-  const deviceId = options.deviceId ?? getDeviceId();
+  const deviceId = options.deviceId ?? (await getDeviceId());
 
   const client =
     options.client ??
@@ -79,6 +89,8 @@ export async function runSynchronize(
       getAccessToken: options.getAccessToken,
       deviceId,
       baseUrl: options.baseUrl,
+      signal: options.signal,
+      onProgress: options.onProgress,
     });
 
   status.beginSynchronize();
@@ -86,6 +98,9 @@ export async function runSynchronize(
   let attempt = 0;
   try {
     while (true) {
+      if (options.signal?.aborted) {
+        throw new SyncCancelledError();
+      }
       attempt += 1;
       try {
         await synchronizeImpl({
@@ -146,6 +161,10 @@ export async function runSynchronize(
       }
     }
   } catch (err) {
+    if (options.signal?.aborted || err instanceof SyncCancelledError) {
+      status.endSynchronize({ ok: true });
+      return;
+    }
     const message = errorMessage(err);
     status.endSynchronize({ ok: false, errorMessage: message });
     status.reportError(message);

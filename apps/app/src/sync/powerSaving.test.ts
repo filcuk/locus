@@ -91,4 +91,30 @@ describe('createPowerSavingDriver', () => {
     driver.stop();
     expect(onResume).toBeNull();
   });
+
+  it('cancels an in-flight pass without clearing local changes', async () => {
+    let cancelled = false;
+    const synchronize = vi.fn(
+      async (options: { signal?: AbortSignal }): Promise<void> =>
+        new Promise((resolve) => {
+          options.signal?.addEventListener('abort', () => {
+            cancelled = true;
+            resolve();
+          });
+        }),
+    );
+    const driver = createPowerSavingDriver({
+      database: fakeDatabase(),
+      getAccessToken: () => 'token',
+      synchronize,
+    });
+
+    const refresh = driver.refresh();
+    await Promise.resolve();
+    driver.cancel();
+    await refresh;
+
+    expect(cancelled).toBe(true);
+    expect(synchronize).toHaveBeenCalledOnce();
+  });
 });

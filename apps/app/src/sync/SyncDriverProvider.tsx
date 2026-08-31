@@ -21,7 +21,7 @@ export function SyncDriverProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     const driver = createPowerSavingDriver({
       database,
-      getAccessToken: () => getValidAccessToken(),
+      getAccessToken: (signal) => getValidAccessToken({ signal }),
       subscribeResume: (onResume) => {
         const onChange = (state: AppStateStatus) => {
           if (state === 'active') onResume();

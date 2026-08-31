@@ -33,8 +33,10 @@ export type PowerSavingDriverOptions = {
 export type PowerSavingDriver = {
   /** Start interval pull + resume listener. */
   start: () => void;
-  /** Stop timers and listeners; in-flight sync is left to finish. */
+  /** Stop timers/listeners and abort in-flight sync without local data loss. */
   stop: () => void;
+  /** Abort the in-flight sync without dropping local changes. */
+  cancel: () => void;
   /** Debounced synchronize after a local write. */
   requestPush: () => void;
   /** Immediate synchronize (pull-to-refresh / explicit). */
@@ -57,6 +59,7 @@ export function createPowerSavingDriver(
   let debounceTimer: ReturnType<typeof setTimeout> | null = null;
   let intervalTimer: ReturnType<typeof setTimeout> | null = null;
   let unsubscribeResume: (() => void) | null = null;
+  let activeController: AbortController | null = null;
   /** Serialize synchronize() — WatermelonDB forbids concurrent runs. */
   let chain: Promise<void> = Promise.resolve();
 
@@ -64,16 +67,22 @@ export function createPowerSavingDriver(
     chain = chain.then(async () => {
       if (syncing) return;
       syncing = true;
+      const controller = new AbortController();
+      activeController = controller;
       try {
         await synchronize({
           database: options.database,
           getAccessToken: options.getAccessToken,
           deviceId: options.deviceId,
           baseUrl: options.baseUrl,
+          signal: controller.signal,
         });
       } catch {
         // Status hooks already recorded the error; swallow so the queue continues.
       } finally {
+        if (activeController === controller) {
+          activeController = null;
+        }
         syncing = false;
       }
     });
@@ -117,12 +126,16 @@ export function createPowerSavingDriver(
     },
     stop: () => {
       started = false;
+      activeController?.abort();
       clearDebounce();
       clearIntervalTimer();
       if (unsubscribeResume) {
         unsubscribeResume();
         unsubscribeResume = null;
       }
+    },
+    cancel: () => {
+      activeController?.abort();
     },
     requestPush: () => {
       clearDebounce();

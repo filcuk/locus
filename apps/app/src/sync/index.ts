@@ -44,6 +44,7 @@ export {
 
 export {
   bindActiveSyncDriver,
+  cancelSync,
   refreshSync,
   requestSyncPush,
   unbindActiveSyncDriver,

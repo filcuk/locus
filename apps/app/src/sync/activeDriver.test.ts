@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from 'vitest';
 
 import {
   bindActiveSyncDriver,
+  cancelSync,
   getActiveSyncDriverForTests,
   refreshSync,
   requestSyncPush,
@@ -15,6 +16,7 @@ function fakeDriver(
   return {
     start: vi.fn(),
     stop: vi.fn(),
+    cancel: vi.fn(),
     requestPush: vi.fn(),
     refresh: vi.fn(async () => undefined),
     isSyncing: vi.fn(() => false),
@@ -42,6 +44,16 @@ describe('activeDriver registry', () => {
 
     unbindActiveSyncDriver(driver);
     expect(getActiveSyncDriverForTests()).toBeNull();
+  });
+
+  it('forwards cancellation to the bound driver', () => {
+    const driver = fakeDriver();
+    bindActiveSyncDriver(driver);
+
+    cancelSync();
+
+    expect(driver.cancel).toHaveBeenCalledOnce();
+    unbindActiveSyncDriver(driver);
   });
 
   it('unbind of a different driver leaves the active binding', () => {

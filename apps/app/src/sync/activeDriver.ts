@@ -23,6 +23,11 @@ export function requestSyncPush(): void {
   active?.requestPush();
 }
 
+/** Abort the active pass without dropping local outbox changes. */
+export function cancelSync(): void {
+  active?.cancel();
+}
+
 /** Immediate synchronize — pull-to-refresh / explicit. */
 export function refreshSync(): Promise<void> {
   return active?.refresh() ?? Promise.resolve();

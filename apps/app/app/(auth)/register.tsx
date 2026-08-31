@@ -1,5 +1,5 @@
 import { Link, useRouter } from 'expo-router';
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Pressable,
@@ -9,7 +9,13 @@ import {
   View,
 } from 'react-native';
 
-import { messageForAuthError, register } from '@/auth';
+import { getServerUrl } from '@/config/server-url';
+import { ConnectionProgress } from '@/features/connection/ConnectionProgress';
+import {
+  isAuthCancelled,
+  messageForAuthError,
+  register,
+} from '@/auth';
 import { t } from '@/i18n';
 
 export default function RegisterScreen() {
@@ -19,30 +25,47 @@ export default function RegisterScreen() {
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [attempt, setAttempt] = useState(1);
+  const controller = useRef<AbortController | null>(null);
+  const serverUrl = getServerUrl() ?? '';
 
   const onSubmit = async () => {
+    const requestController = new AbortController();
+    controller.current = requestController;
     setError(null);
     setBusy(true);
+    setAttempt(1);
     try {
-      await register({
-        email: email.trim(),
-        password,
-        display_name: displayName.trim(),
-      });
+      await register(
+        {
+          email: email.trim(),
+          password,
+          display_name: displayName.trim(),
+        },
+        {
+          signal: requestController.signal,
+          onProgress: ({ attempt: nextAttempt }) => {
+            setAttempt(nextAttempt);
+          },
+        },
+      );
       router.replace('/(app)');
     } catch (err) {
-      setError(
-        messageForAuthError(err, {
-          known: {
-            email_taken: t('auth.register.emailTaken'),
-            validation_failed: t('auth.register.validation'),
-            rate_limited: t('auth.errors.rateLimited'),
-          },
-          network: t('auth.errors.network'),
-          generic: t('auth.errors.generic'),
-        }),
-      );
+      if (!isAuthCancelled(err)) {
+        setError(
+          messageForAuthError(err, {
+            known: {
+              email_taken: t('auth.register.emailTaken'),
+              validation_failed: t('auth.register.validation'),
+              rate_limited: t('auth.errors.rateLimited'),
+            },
+            network: t('auth.errors.network'),
+            generic: t('auth.errors.generic'),
+          }),
+        );
+      }
     } finally {
+      controller.current = null;
       setBusy(false);
     }
   };
@@ -97,6 +120,16 @@ export default function RegisterScreen() {
         <Text style={styles.error} testID="auth-register-error">
           {error}
         </Text>
+      ) : null}
+      {busy ? (
+        <ConnectionProgress
+          target={serverUrl}
+          attempt={attempt}
+          maxAttempts={1}
+          onCancel={() => {
+            controller.current?.abort();
+          }}
+        />
       ) : null}
 
       <Pressable

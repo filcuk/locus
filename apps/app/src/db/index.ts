@@ -3,7 +3,8 @@
  * UI reads observables via `DatabaseProvider`; writers use containment helpers.
  */
 export { DatabaseProvider } from './DatabaseProvider';
-export { database } from './database';
+export { createDatabase } from './database';
+export { databaseNameForScope } from './scope';
 export {
   assertPointContainment,
   isValidPointContainment,
