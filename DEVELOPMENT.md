@@ -148,7 +148,24 @@ pnpm --filter app exec expo run:android
 
 - Device or emulator must be visible to `adb`.
 - After native dependency or config-plugin changes, run `prebuild` again (or clean `android/` and regenerate).
-- Day-to-day JS reload: `pnpm --filter app start` (`expo start --dev-client`) once a build is installed.
+- Day-to-day JS reload / Android dev-client retest: follow the steps below once a build is installed.
+
+### Android dev-client retest
+
+From the repository root, start Expo through the app workspace with a cleared Metro cache, LAN mode, and the fixed Metro port:
+
+```powershell
+pnpm --filter @locus/app exec expo start --dev-client --clear --lan --port 8081
+```
+
+For `adb reverse` debugging (USB or wireless ADB), use:
+
+```powershell
+adb reverse tcp:8000 tcp:8000
+adb reverse tcp:8081 tcp:8081
+```
+
+With that setup, use `http://127.0.0.1:8000` as the server URL in the app. The reverse rule makes the device's localhost port reach the PC's localhost API; the `8081` rule does the same for Metro. For direct LAN debugging instead, leave the reverse rules unused, keep the phone and PC on the same network, and use the PC's LAN URL (for example, `http://192.168.x.x:8000`) as the app server URL. Use the Expo LAN URL for Metro.
 
 ### Plain-HTTP API from a physical device (interim)
 
@@ -159,15 +176,9 @@ Two common ways to point the in-app server URL at the maintainer API on port **8
 | Approach | Server URL in the app | Notes |
 |----------|----------------------|--------|
 | **LAN IP** | `http://192.168.x.x:8000` | Phone and PC on the same Wi‑Fi; cleartext allowance required; Windows Firewall must allow inbound **8000** |
-| **adb reverse (USB)** | `http://127.0.0.1:8000` | Forwards the device’s localhost:8000 to the host’s localhost:8000 — useful when LAN routing/firewall is awkward |
+| **adb reverse (USB or wireless ADB)** | `http://127.0.0.1:8000` | Forwards the device’s localhost:8000 to the host’s localhost:8000 — useful when LAN routing/firewall is awkward |
 
-`adb reverse` interim (device connected over USB, API already listening on the host):
-
-```powershell
-adb reverse tcp:8000 tcp:8000
-```
-
-Re-run after unplug/replug. This does **not** replace cleartext for `http://` URLs — it only makes `127.0.0.1:8000` on the device reach the host API. Prefer HTTPS or a stable LAN URL for anything beyond local debugging.
+If the device disconnects, re-run those commands after reconnecting. Reverse does **not** replace cleartext for `http://` URLs. Prefer HTTPS or a stable LAN URL for anything beyond local debugging.
 
 ### Windows native build notes (maintainer)
 
@@ -220,7 +231,7 @@ Repo-wide gates (typecheck, lint, tests, licences): see AGENTS §6.
 | Gradle / `expo run:android` cannot find the SDK | `ANDROID_HOME` or `ANDROID_SDK_ROOT` unset, mismatched, or pointing at Android Studio’s install root instead of the **SDK** directory |
 | `ninja: … build.ninja still dirty after 100 tries` (worklets/screens) | SDK CMake 3.22.1 ships Ninja **1.10**; use Ninja **1.12+** via a local `cmake.dir` copy or CMake 3.31+. Short path (`C:\l`) helps but is not sufficient alone. See Windows native build notes above. |
 | `lld: error: unknown argument: -z` during CMake link | `build-tools/*/lld.exe` on `PATH` shadowing NDK `ld.lld` — remove build-tools from `PATH` for the build shell |
-| App cannot reach `http://…` LAN / localhost API on device | Cleartext blocked unless `usesCleartextTraffic` is on (see [Plain-HTTP API](#plain-http-api-from-a-physical-device-interim)); needs a **new native build** after changing that flag. Or use HTTPS. For USB debugging, `adb reverse tcp:8000 tcp:8000` and server URL `http://127.0.0.1:8000`. |
+| App cannot reach `http://…` LAN / localhost API on device | Cleartext blocked unless `usesCleartextTraffic` is on (see [Plain-HTTP API](#plain-http-api-from-a-physical-device-interim)); needs a **new native build** after changing that flag. Or use HTTPS. For adb reverse debugging, use both reverse rules and server URL `http://127.0.0.1:8000`; for direct LAN debugging, use the PC LAN URL instead (see [Android dev-client retest](#android-dev-client-retest)). |
 | `pnpm --filter app web` / missing `expo` scripts | Checked out a **stub** or pre-client tip (e.g. early `main` or a paths-only branch) — use a tip that includes the Expo app (post–I1 / `chore/p0-integration`) |
 | Metro / adb “does nothing” on Windows | Firewall denied the listen/connect prompt; approve for private networks |
 | “Works in Expo Go” | Irrelevant here — native modules will not load; use a dev build |
