@@ -3,7 +3,14 @@
  * Network sync is a side effect owned by the sync driver — not this module.
  * Bbox is derived from geom_geojson on write (DESIGN §4).
  */
-import { bboxOf, newEntityId, type AreaGeometry, type Visibility } from '@locus/shared';
+import {
+  AreaGeometrySchema,
+  bboxOf,
+  newEntityId,
+  prepareAreaGeometry,
+  type AreaGeometry,
+  type Visibility,
+} from '@locus/shared';
 import type { Database } from '@nozbe/watermelondb';
 
 import { serializeGeomGeojson } from '../containment';
@@ -28,7 +35,12 @@ export async function createAreaLocal(
   const id = input.id ?? newEntityId();
   const now = Date.now();
   const updatedBy = input.updatedBy ?? input.ownerId;
-  const bbox = bboxOf(input.geom);
+  const geometry = AreaGeometrySchema.parse(input.geom);
+  const prepared = prepareAreaGeometry(geometry);
+  if (!prepared.ok) {
+    throw new Error(prepared.message);
+  }
+  const bbox = bboxOf(prepared.geometry);
 
   return database.write(async () =>
     database.get<Area>('areas').create((row) => {
@@ -36,7 +48,7 @@ export async function createAreaLocal(
       row.ownerId = input.ownerId;
       row.title = input.title;
       row.description = input.description ?? null;
-      row.geomGeojson = serializeGeomGeojson(input.geom);
+      row.geomGeojson = serializeGeomGeojson(prepared.geometry);
       row.bboxMinLat = bbox.bbox_min_lat;
       row.bboxMinLon = bbox.bbox_min_lon;
       row.bboxMaxLat = bbox.bbox_max_lat;

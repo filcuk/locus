@@ -50,6 +50,14 @@ function ringsAreClosed(rings: LonLat[][]): boolean {
   return rings.every(isClosedRing);
 }
 
+function ringsHaveArea(rings: LonLat[][]): boolean {
+  return rings.every((ring) => {
+    const vertices = ring.slice(0, -1);
+    const unique = new Set(vertices.map(([lon, lat]) => `${lon},${lat}`));
+    return unique.size >= 3;
+  });
+}
+
 /** WGS84 GeoJSON Polygon (closed rings). */
 export const PolygonGeometrySchema = z.object({
   type: z.literal('Polygon'),
@@ -75,6 +83,17 @@ export const AreaGeometrySchema = z
       ctx.addIssue({
         code: 'custom',
         message: 'Polygon rings must be closed (first coordinate equals last)',
+        path: ['coordinates'],
+      });
+    }
+    const rings =
+      geom.type === 'Polygon'
+        ? geom.coordinates
+        : geom.coordinates.flat();
+    if (!ringsHaveArea(rings)) {
+      ctx.addIssue({
+        code: 'custom',
+        message: 'Polygon rings must contain at least three unique vertices',
         path: ['coordinates'],
       });
     }
