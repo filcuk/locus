@@ -16,6 +16,9 @@ import {
 } from '../schemas/sync.js';
 
 export const SYNC_SCHEMA_VERSION = 1;
+export const DEFAULT_SYNC_REQUEST_TIMEOUT_MS = 5_000;
+export const DEFAULT_SYNC_TRANSPORT_RETRIES = 2;
+export const SYNC_RETRY_BACKOFF_MS = [500, 1_000] as const;
 
 /** Minimal fetch shape so Node and browser callers share one type. */
 export type SyncFetch = (
@@ -24,8 +27,14 @@ export type SyncFetch = (
     method?: string;
     headers?: Record<string, string>;
     body?: string;
+    signal?: AbortSignal;
   },
 ) => Promise<Response>;
+
+export type SyncProgress = {
+  attempt: number;
+  maxAttempts: number;
+};
 
 export type SyncClientOptions = {
   /** Origin only — no trailing slash. */
@@ -34,6 +43,16 @@ export type SyncClientOptions = {
   deviceId: string;
   /** Injected for tests (Hono `app.request` adapter). Defaults to global fetch. */
   fetch?: SyncFetch;
+  /** Cancels the current sync pass without touching local data. */
+  signal?: AbortSignal;
+  /** Per-request transport deadline. */
+  timeoutMs?: number;
+  /** Retries for network failures and HTTP 5xx responses. */
+  maxTransportRetries?: number;
+  /** Injected delay for retry tests. */
+  sleep?: (ms: number, signal?: AbortSignal) => Promise<void>;
+  /** Reports transport attempts to the connection-status owner. */
+  onProgress?: (progress: SyncProgress) => void;
 };
 
 export type SyncClientError = {
@@ -52,6 +71,28 @@ export class SyncHttpError extends Error {
     this.status = error.status;
     this.code = error.code;
   }
+}
+
+export class SyncCancelledError extends Error {
+  constructor() {
+    super('Sync cancelled');
+    this.name = 'SyncCancelledError';
+  }
+}
+
+export class SyncTimeoutError extends Error {
+  constructor() {
+    super('Sync request timed out');
+    this.name = 'SyncTimeoutError';
+  }
+}
+
+function retryDelay(attempt: number): number {
+  return (
+    SYNC_RETRY_BACKOFF_MS[attempt - 1] ??
+    SYNC_RETRY_BACKOFF_MS[SYNC_RETRY_BACKOFF_MS.length - 1] ??
+    0
+  );
 }
 
 function joinUrl(baseUrl: string, path: string): string {
@@ -84,6 +125,93 @@ async function readError(res: Response): Promise<SyncClientError> {
   return { status: res.status, message: `sync HTTP ${res.status}` };
 }
 
+function wait(ms: number, signal?: AbortSignal): Promise<void> {
+  if (signal?.aborted) {
+    return Promise.reject(new SyncCancelledError());
+  }
+  return new Promise((resolve, reject) => {
+    const timer = setTimeout(() => {
+      signal?.removeEventListener('abort', onAbort);
+      resolve();
+    }, ms);
+    const onAbort = (): void => {
+      clearTimeout(timer);
+      signal?.removeEventListener('abort', onAbort);
+      reject(new SyncCancelledError());
+    };
+    signal?.addEventListener('abort', onAbort, { once: true });
+  });
+}
+
+function isRetryableStatus(status: number): boolean {
+  return status >= 500 && status <= 599;
+}
+
+async function request(
+  fetchImpl: SyncFetch,
+  input: string,
+  init: {
+    method: string;
+    headers: Record<string, string>;
+    body?: string;
+  },
+  options: SyncClientOptions,
+): Promise<Response> {
+  const timeoutMs = options.timeoutMs ?? DEFAULT_SYNC_REQUEST_TIMEOUT_MS;
+  const maxRetries =
+    options.maxTransportRetries ?? DEFAULT_SYNC_TRANSPORT_RETRIES;
+  const maxAttempts = maxRetries + 1;
+  const sleep = options.sleep ?? wait;
+  let lastError: unknown = new Error('Sync request failed');
+
+  for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
+    if (options.signal?.aborted) {
+      throw new SyncCancelledError();
+    }
+    options.onProgress?.({ attempt, maxAttempts });
+
+    const controller = new AbortController();
+    let timedOut = false;
+    const onParentAbort = (): void => {
+      controller.abort();
+    };
+    options.signal?.addEventListener('abort', onParentAbort, { once: true });
+    const timer = setTimeout(() => {
+      timedOut = true;
+      controller.abort();
+    }, timeoutMs);
+
+    try {
+      const response = await fetchImpl(input, {
+        ...init,
+        signal: controller.signal,
+      });
+      if (isRetryableStatus(response.status) && attempt < maxAttempts) {
+        clearTimeout(timer);
+        options.signal?.removeEventListener('abort', onParentAbort);
+        await sleep(retryDelay(attempt), options.signal);
+        continue;
+      }
+      clearTimeout(timer);
+      options.signal?.removeEventListener('abort', onParentAbort);
+      return response;
+    } catch (error) {
+      clearTimeout(timer);
+      options.signal?.removeEventListener('abort', onParentAbort);
+      if (options.signal?.aborted) {
+        throw new SyncCancelledError();
+      }
+      lastError = timedOut ? new SyncTimeoutError() : error;
+      if (attempt >= maxAttempts) {
+        throw lastError;
+      }
+      await sleep(retryDelay(attempt), options.signal);
+    }
+  }
+
+  throw lastError;
+}
+
 export function createSyncClient(options: SyncClientOptions) {
   const fetchImpl = options.fetch ?? defaultFetch();
 
@@ -93,13 +221,13 @@ export function createSyncClient(options: SyncClientOptions) {
     url.searchParams.set('device_id', options.deviceId);
     url.searchParams.set('schema_version', String(SYNC_SCHEMA_VERSION));
 
-    const res = await fetchImpl(url.toString(), {
+    const res = await request(fetchImpl, url.toString(), {
       method: 'GET',
       headers: {
         'x-locus-user-id': options.userId,
         'x-locus-device-id': options.deviceId,
       },
-    });
+    }, options);
 
     if (!res.ok) {
       throw new SyncHttpError(await readError(res));
@@ -112,20 +240,20 @@ export function createSyncClient(options: SyncClientOptions) {
   async function push(
     body: Omit<SyncPushRequest, 'device_id'> & { device_id?: string },
   ): Promise<SyncPushResponse> {
-    const request = SyncPushRequestSchema.parse({
+    const requestBody = SyncPushRequestSchema.parse({
       ...body,
       device_id: body.device_id ?? options.deviceId,
     });
 
-    const res = await fetchImpl(joinUrl(options.baseUrl, '/sync/push'), {
+    const res = await request(fetchImpl, joinUrl(options.baseUrl, '/sync/push'), {
       method: 'POST',
       headers: {
         'content-type': 'application/json',
         'x-locus-user-id': options.userId,
         'x-locus-device-id': options.deviceId,
       },
-      body: JSON.stringify(request),
-    });
+      body: JSON.stringify(requestBody),
+    }, options);
 
     if (!res.ok) {
       throw new SyncHttpError(await readError(res));

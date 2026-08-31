@@ -1,5 +1,5 @@
 import { Link } from 'expo-router';
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Pressable,
@@ -9,7 +9,13 @@ import {
   View,
 } from 'react-native';
 
-import { messageForAuthError, requestPasswordReset } from '@/auth';
+import { getServerUrl } from '@/config/server-url';
+import { ConnectionProgress } from '@/features/connection/ConnectionProgress';
+import {
+  isAuthCancelled,
+  messageForAuthError,
+  requestPasswordReset,
+} from '@/auth';
 import { t } from '@/i18n';
 
 export default function ForgotPasswordScreen() {
@@ -17,25 +23,42 @@ export default function ForgotPasswordScreen() {
   const [error, setError] = useState<string | null>(null);
   const [done, setDone] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [attempt, setAttempt] = useState(1);
+  const controller = useRef<AbortController | null>(null);
+  const serverUrl = getServerUrl() ?? '';
 
   const onSubmit = async () => {
+    const requestController = new AbortController();
+    controller.current = requestController;
     setError(null);
     setBusy(true);
+    setAttempt(1);
     try {
-      await requestPasswordReset({ email: email.trim() });
+      await requestPasswordReset(
+        { email: email.trim() },
+        {
+          signal: requestController.signal,
+          onProgress: ({ attempt: nextAttempt }) => {
+            setAttempt(nextAttempt);
+          },
+        },
+      );
       setDone(true);
     } catch (err) {
-      setError(
-        messageForAuthError(err, {
-          known: {
-            rate_limited: t('auth.errors.rateLimited'),
-            reset_unavailable: t('auth.forgotPassword.unavailable'),
-          },
-          network: t('auth.errors.network'),
-          generic: t('auth.errors.generic'),
-        }),
-      );
+      if (!isAuthCancelled(err)) {
+        setError(
+          messageForAuthError(err, {
+            known: {
+              rate_limited: t('auth.errors.rateLimited'),
+              reset_unavailable: t('auth.forgotPassword.unavailable'),
+            },
+            network: t('auth.errors.network'),
+            generic: t('auth.errors.generic'),
+          }),
+        );
+      }
     } finally {
+      controller.current = null;
       setBusy(false);
     }
   };
@@ -70,6 +93,16 @@ export default function ForgotPasswordScreen() {
             <Text style={styles.error} testID="auth-forgot-error">
               {error}
             </Text>
+          ) : null}
+          {busy ? (
+            <ConnectionProgress
+              target={serverUrl}
+              attempt={attempt}
+              maxAttempts={1}
+              onCancel={() => {
+                controller.current?.abort();
+              }}
+            />
           ) : null}
 
           <Pressable

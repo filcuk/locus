@@ -331,6 +331,12 @@ Defined as Zod schemas in `packages/shared` and covered by a conformance suite t
 
 **`device_id`** is a UUID generated on first launch and stored with the session tokens in **`expo-secure-store`** on native (Keychain / Keystore) and **`localStorage`** on web. It is per-install by design: a reinstall wipes that store and needs a full resync anyway, so a surviving id would carry no useful state. Logout clears tokens only — not `device_id` and never WatermelonDB.
 
+### Connection attempts and local scope
+
+Interactive reachability attempts use a **5-second deadline per attempt**, at most **two transport retries**, and **500 ms then 1 s backoff** (about 17 seconds worst case). Mutating auth requests (login, register, password reset, refresh, and logout) are never automatically retried. A bounded reachability `GET` probe may retry, and sync may retry transient transport or 5xx failures using this budget. These transport retries are separate from the protocol retries for `PULL_REQUIRED` and `CURSOR_TOO_OLD`. An abort suppresses any pending retry and leaves the owning screen, session, URL, local database, and outbox unchanged. Signed-in local/offline use remains available without internet.
+
+Each local WatermelonDB database and its outbox are scoped by the canonical server URL and authenticated account. Changing server is an explicit action: it preserves the old server/account scope, clears only session tokens bound to the old server, stores the new URL, and routes to authentication for that instance. It must never expose rows or pending changes from another server/account scope. A cancelled connection attempt is not a server change. “Exit” cancels the attempt and returns to its owning screen; it does not terminate the app, which is not reliable on Web.
+
 ### Guarantees
 
 - Local write < ~50 ms perceived; >~150 ms work shows pending/optimistic UI.
@@ -488,6 +494,7 @@ Operational requirements: run migrations at startup behind a lock, and never des
 5. Expo Router routes shared between Android and Web.
 6. A **server URL** screen precedes login, since every instance is self-hosted.
 7. Never wipe local data on a 401; refresh must be single-flight to avoid logout loops.
+8. Connection attempts show the target server and progress, use the bounded transport policy in [§5](#5-sync), and expose Cancel. Change server is a separate explicit action; Cancel and Exit preserve the URL, session, and local data.
 
 ```text
 app/
@@ -642,6 +649,8 @@ P0 also carries two de-risking spikes, both cheap now and expensive later:
 | Monorepo tooling | pnpm workspaces, no Turborepo |
 | `device_id` lifecycle | New UUID per install, stored with session tokens in `expo-secure-store` (native) / `localStorage` (web) |
 | Client token storage | `expo-secure-store` for access + refresh tokens and `device_id` on native; `localStorage` web fallback (SecureStore has no web backend); single-flight refresh; 401 clears tokens only, never WatermelonDB |
+| Connection retry policy | Interactive reachability uses 5 seconds per attempt, at most two transport retries, and 500 ms then 1 s backoff (~17 s worst case). Mutating auth requests are not automatically retried; bounded GET probes and transient sync retries are allowed. Protocol retries remain separate. Abort suppresses retries and preserves URL, session, local data, and outbox. (Maintainer decision 2026-08-31.) |
+| Local scope and server switching | WatermelonDB databases and outboxes are scoped by canonical server URL plus authenticated account. Change server preserves the old scope, clears only old-server session tokens, stores the new URL, and routes to that instance's auth; it never wipes local data or mixes scopes. Cancel/Exit returns to the owning screen and never terminates the app. (Maintainer decision 2026-08-31.) |
 | Notes vs comments | Notes are a personal visit timeline, private to their author forever; comments are collaborative and follow the target's view permission |
 | Visits | A note with `visited_at`; private, so visit counts are per-viewer and derived on read |
 | Tags (P2-D) | Curated `system` seed catalogue with namespaced keys (random hex colours for now; icons later) and categories — **type:** monument \| view \| trail \| natural_feature; **terrain:** easy \| moderate \| hard \| impossible; **rurality:** urban \| suburban \| rural \| remote; **beauty:** unrefined \| plain \| moderate \| exquisite; **privacy:** bustling \| populated \| quiet \| secluded. Any non-anonymous user may **create** `user`-scoped tags (local to that user). Others cannot **use** (assign) another user's tags. Private tag *definitions* stay invisible in catalogues/pickers/filters; on an item **shared with them**, viewers **see** applied tags as chips via denormalised Tagging fields but cannot use/find those user tags on their own entries. **Retire:** soft-retire (`retired_at`) blocks new assigns but keeps existing taggings; on remove, offer a choice to strip the tag from all entries. (Maintainer chat 2026-08-03.) |

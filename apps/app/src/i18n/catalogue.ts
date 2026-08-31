@@ -9,6 +9,9 @@ export const catalogue = {
   'serverSetup.urlPlaceholder': 'https://locus.example.com',
   'serverSetup.continue': 'Continue',
   'serverSetup.invalidUrl': 'Enter a valid http or https URL.',
+  'serverSetup.changeTitle': 'Change server',
+  'serverSetup.changeSubtitle': 'Connect this app to another Locus instance.',
+  'serverSetup.cancel': 'Cancel',
 
   'auth.login.title': 'Sign in',
   'auth.login.subtitle': 'Sign in to your Locus instance.',
@@ -42,6 +45,9 @@ export const catalogue = {
   'auth.errors.network':
     'Could not reach the server. Check the URL and that the instance allows plain HTTP if you are not using HTTPS.',
   'auth.errors.rateLimited': 'Too many attempts. Wait a moment and try again.',
+  'connection.target': 'Connecting to {target}',
+  'connection.attempt': 'Attempt {attempt} of {maxAttempts}',
+  'connection.cancel': 'Cancel',
 
   'home.title': 'Home',
   'home.entriesTab': 'Entries',
@@ -162,6 +168,7 @@ export const catalogue = {
   'settings.notifications': 'Notifications',
   'settings.storage': 'Storage',
   'settings.sync': 'Sync',
+  'settings.sync.changeServer': 'Change server',
   'settings.trash': 'Trash',
   'settings.stub': 'This settings screen arrives in a later phase.',
 

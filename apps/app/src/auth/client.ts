@@ -30,6 +30,15 @@ export type AuthFetch = (
   init?: RequestInit,
 ) => Promise<Response>;
 
+export const AUTH_REQUEST_TIMEOUT_MS = 5_000;
+export const AUTH_TRANSPORT_RETRIES = 2;
+export const AUTH_RETRY_BACKOFF_MS = [500, 1_000] as const;
+
+export type AuthProgress = {
+  attempt: number;
+  maxAttempts: number;
+};
+
 export class AuthHttpError extends Error {
   readonly status: number;
   readonly code: string;
@@ -42,14 +51,40 @@ export class AuthHttpError extends Error {
   }
 }
 
-type ClientOptions = {
+export class AuthCancelledError extends Error {
+  constructor() {
+    super('Connection attempt cancelled');
+    this.name = 'AuthCancelledError';
+  }
+}
+
+export class AuthTimeoutError extends Error {
+  constructor() {
+    super('Connection request timed out');
+    this.name = 'AuthTimeoutError';
+  }
+}
+
+export type ClientOptions = {
   baseUrl?: string;
   fetch?: AuthFetch;
   now?: () => number;
+  signal?: AbortSignal;
+  timeoutMs?: number;
+  onProgress?: (progress: AuthProgress) => void;
+  sleep?: (ms: number, signal?: AbortSignal) => Promise<void>;
 };
 
 let fetchOverride: AuthFetch | null = null;
 let refreshInFlight: Promise<string | null> | null = null;
+
+function retryDelay(attempt: number): number {
+  return (
+    AUTH_RETRY_BACKOFF_MS[attempt - 1] ??
+    AUTH_RETRY_BACKOFF_MS[AUTH_RETRY_BACKOFF_MS.length - 1] ??
+    0
+  );
+}
 
 export function setAuthFetchForTests(fetchImpl: AuthFetch | null): void {
   fetchOverride = fetchImpl;
@@ -86,6 +121,59 @@ async function parseError(res: Response): Promise<AuthHttpError> {
   }
 }
 
+function wait(ms: number, signal?: AbortSignal): Promise<void> {
+  if (signal?.aborted) {
+    return Promise.reject(new AuthCancelledError());
+  }
+  return new Promise((resolve, reject) => {
+    const timer = setTimeout(() => {
+      signal?.removeEventListener('abort', onAbort);
+      resolve();
+    }, ms);
+    const onAbort = (): void => {
+      clearTimeout(timer);
+      signal?.removeEventListener('abort', onAbort);
+      reject(new AuthCancelledError());
+    };
+    signal?.addEventListener('abort', onAbort, { once: true });
+  });
+}
+
+async function fetchWithDeadline(
+  fetchImpl: AuthFetch,
+  input: string,
+  init: RequestInit,
+  options?: ClientOptions,
+): Promise<Response> {
+  if (options?.signal?.aborted) {
+    throw new AuthCancelledError();
+  }
+  const controller = new AbortController();
+  let timedOut = false;
+  const onParentAbort = (): void => {
+    controller.abort();
+  };
+  options?.signal?.addEventListener('abort', onParentAbort, { once: true });
+  const timer = setTimeout(() => {
+    timedOut = true;
+    controller.abort();
+  }, options?.timeoutMs ?? AUTH_REQUEST_TIMEOUT_MS);
+  try {
+    return await fetchImpl(input, { ...init, signal: controller.signal });
+  } catch (error) {
+    if (options?.signal?.aborted) {
+      throw new AuthCancelledError();
+    }
+    if (timedOut) {
+      throw new AuthTimeoutError();
+    }
+    throw error;
+  } finally {
+    clearTimeout(timer);
+    options?.signal?.removeEventListener('abort', onParentAbort);
+  }
+}
+
 async function postJson<T>(
   path: string,
   body: unknown,
@@ -93,16 +181,70 @@ async function postJson<T>(
   options?: ClientOptions,
 ): Promise<T> {
   const fetchImpl = resolveFetch(options);
-  const res = await fetchImpl(joinUrl(resolveBaseUrl(options), path), {
+  options?.onProgress?.({ attempt: 1, maxAttempts: 1 });
+  const res = await fetchWithDeadline(
+    fetchImpl,
+    joinUrl(resolveBaseUrl(options), path),
+    {
     method: 'POST',
     headers: { 'content-type': 'application/json', accept: 'application/json' },
     body: JSON.stringify(body),
-  });
+    },
+    options,
+  );
   if (!res.ok) {
     throw await parseError(res);
   }
   const json: unknown = await res.json();
   return parse(json);
+}
+
+/**
+ * Probe an instance before changing the active server. GET /health is safe to
+ * retry; auth mutations intentionally use postJson's single attempt.
+ */
+export async function probeServer(options: ClientOptions = {}): Promise<void> {
+  const fetchImpl = resolveFetch(options);
+  const baseUrl = resolveBaseUrl(options);
+  const maxAttempts = AUTH_TRANSPORT_RETRIES + 1;
+  const sleep = options.sleep ?? wait;
+
+  for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
+    if (options.signal?.aborted) {
+      throw new AuthCancelledError();
+    }
+    options.onProgress?.({ attempt, maxAttempts });
+    try {
+      const response = await fetchWithDeadline(
+        fetchImpl,
+        joinUrl(baseUrl, '/health'),
+        { method: 'GET', headers: { accept: 'application/json' } },
+        options,
+      );
+      if (response.ok) return;
+      const error = await parseError(response);
+      if (response.status < 500 || attempt >= maxAttempts) {
+        throw error;
+      }
+    } catch (error) {
+      if (error instanceof AuthCancelledError) {
+        throw error;
+      }
+      if (
+        error instanceof AuthHttpError &&
+        (error.status < 500 || attempt >= maxAttempts)
+      ) {
+        throw error;
+      }
+      if (attempt >= maxAttempts) {
+        throw error;
+      }
+    }
+    await sleep(
+      retryDelay(attempt),
+      options.signal,
+    );
+  }
 }
 
 async function storeTokens(tokens: AuthTokens, options?: ClientOptions): Promise<AuthTokens> {

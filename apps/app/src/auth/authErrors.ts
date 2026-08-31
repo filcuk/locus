@@ -4,7 +4,11 @@
  * Never surface tokens, stack traces, or Zod dumps.
  */
 
-import { AuthHttpError } from './client';
+import {
+  AuthCancelledError,
+  AuthHttpError,
+  AuthTimeoutError,
+} from './client';
 
 const SECRETISH = /token|password|secret|authorization|bearer|refresh/i;
 
@@ -21,6 +25,7 @@ export function safeServerMessage(message: string | undefined): string | null {
 }
 
 function isNetworkFailure(err: unknown): boolean {
+  if (err instanceof AuthTimeoutError) return true;
   if (!(err instanceof TypeError)) return false;
   const msg = err.message.toLowerCase();
   return (
@@ -29,6 +34,10 @@ function isNetworkFailure(err: unknown): boolean {
     msg.includes('networkerror') ||
     msg.includes('load failed')
   );
+}
+
+export function isAuthCancelled(err: unknown): boolean {
+  return err instanceof AuthCancelledError;
 }
 
 export type AuthErrorCopy = {

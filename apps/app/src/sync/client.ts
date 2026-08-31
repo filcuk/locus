@@ -82,7 +82,7 @@ export function createAuthedSyncFetch(args: {
     ((input, init) => globalThis.fetch(input, init));
 
   return async (input, init) => {
-    const token = await resolveAccessToken(args.getAccessToken);
+    const token = await resolveAccessToken(args.getAccessToken, init?.signal);
     const headers = headerRecord(init?.headers);
     if (!args.keepLegacyUserHeader) {
       const userKey = findHeaderKey(headers, 'x-locus-user-id');
@@ -110,6 +110,11 @@ export function createAppSyncClient(options: AppSyncClientOptions): SyncClient {
       ? options.userId!
       : AUTH_HEADER_PLACEHOLDER_USER,
     deviceId: options.deviceId,
+    signal: options.signal,
+    timeoutMs: options.timeoutMs,
+    maxTransportRetries: options.maxTransportRetries,
+    sleep: options.sleep,
+    onProgress: options.onProgress,
     fetch: createAuthedSyncFetch({
       getAccessToken: options.getAccessToken,
       fetch: options.fetch,

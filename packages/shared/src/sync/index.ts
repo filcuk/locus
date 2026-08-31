@@ -1,10 +1,16 @@
 export {
+  DEFAULT_SYNC_REQUEST_TIMEOUT_MS,
+  DEFAULT_SYNC_TRANSPORT_RETRIES,
+  SYNC_RETRY_BACKOFF_MS,
   SYNC_SCHEMA_VERSION,
+  SyncCancelledError,
   SyncHttpError,
+  SyncTimeoutError,
   createSyncClient,
   proveSyncRoundTrip,
   type SyncClient,
   type SyncClientError,
   type SyncClientOptions,
   type SyncFetch,
+  type SyncProgress,
 } from './http.js';

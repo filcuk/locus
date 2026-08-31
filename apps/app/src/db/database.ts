@@ -4,4 +4,4 @@
  * when platform extensions are not applied (e.g. unit tests that only import
  * schema helpers).
  */
-export { database } from './database.web';
+export { createDatabase } from './database.web';

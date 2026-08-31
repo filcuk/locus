@@ -2,12 +2,15 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { clearServerUrl, setServerUrl } from '../config/server-url';
 import {
+  AuthCancelledError,
   AuthHttpError,
+  AuthTimeoutError,
   clearDeviceIdForTests,
   createMemorySecureStorage,
   getAccessToken,
   getValidAccessToken,
   login,
+  probeServer,
   refreshAccessToken,
   register,
   requestPasswordReset,
@@ -180,5 +183,81 @@ describe('auth client', () => {
       status: 429,
       code: 'rate_limited',
     } satisfies Partial<AuthHttpError>);
+  });
+
+  it('does not retry a failed mutating auth request', async () => {
+    const fetchMock = vi.fn(async () => {
+      throw new TypeError('Network request failed');
+    });
+    setAuthFetchForTests(fetchMock);
+
+    await expect(
+      login({ email: 'user@example.com', password: 'x' }),
+    ).rejects.toThrow(/network request failed/i);
+    expect(fetchMock).toHaveBeenCalledOnce();
+  });
+
+  it('aborts an auth request without retrying or persisting a session', async () => {
+    const controller = new AbortController();
+    const fetchMock = vi.fn(
+      async (_url: string, init?: RequestInit): Promise<Response> =>
+        new Promise((_resolve, reject) => {
+          init?.signal?.addEventListener('abort', () => {
+            reject(new DOMException('aborted', 'AbortError'));
+          });
+        }),
+    );
+    setAuthFetchForTests(fetchMock);
+
+    const request = login(
+      { email: 'user@example.com', password: 'x' },
+      { signal: controller.signal },
+    );
+    await new Promise<void>((resolve) => setTimeout(resolve, 0));
+    controller.abort();
+
+    await expect(request).rejects.toBeInstanceOf(AuthCancelledError);
+    expect(fetchMock).toHaveBeenCalledOnce();
+    expect(await hasSession()).toBe(false);
+  });
+
+  it('bounds an auth request with the connection deadline', async () => {
+    setAuthFetchForTests(
+      async (_url: string, init?: RequestInit): Promise<Response> =>
+        new Promise((_resolve, reject) => {
+          init?.signal?.addEventListener('abort', () => {
+            reject(new DOMException('timed out', 'AbortError'));
+          });
+        }),
+    );
+
+    await expect(
+      login(
+        { email: 'user@example.com', password: 'x' },
+        { timeoutMs: 1 },
+      ),
+    ).rejects.toBeInstanceOf(AuthTimeoutError);
+  });
+
+  it('retries a bounded health probe', async () => {
+    const sleeps: number[] = [];
+    let calls = 0;
+    setAuthFetchForTests(async () => {
+      calls += 1;
+      if (calls === 1) {
+        return Response.json({ status: 'degraded' }, { status: 503 });
+      }
+      return Response.json({ status: 'ok' });
+    });
+
+    await probeServer({
+      baseUrl: 'https://locus.example.com',
+      sleep: async (ms) => {
+        sleeps.push(ms);
+      },
+    });
+
+    expect(calls).toBe(2);
+    expect(sleeps).toEqual([500]);
   });
 });

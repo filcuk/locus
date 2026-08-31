@@ -4,7 +4,9 @@
  * callers inject a getter. Never wipe local data on 401 (DESIGN §8 / AGENTS §4).
  */
 
-export type AccessTokenGetter = () => Promise<string | null> | string | null;
+export type AccessTokenGetter = (
+  signal?: AbortSignal,
+) => Promise<string | null> | string | null;
 
 export class SyncAuthError extends Error {
   constructor(message = 'Sync requires an access token') {
@@ -15,8 +17,9 @@ export class SyncAuthError extends Error {
 
 export async function resolveAccessToken(
   getAccessToken: AccessTokenGetter,
+  signal?: AbortSignal,
 ): Promise<string> {
-  const token = await getAccessToken();
+  const token = await getAccessToken(signal);
   if (token === null || token.length === 0) {
     throw new SyncAuthError();
   }

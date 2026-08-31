@@ -1,10 +1,12 @@
-import { StyleSheet, Text, View } from 'react-native';
+import { useRouter } from 'expo-router';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { getServerUrl } from '@/config/server-url';
 import { t } from '@/i18n';
 
 /** Sync settings stub — surfaces the configured server URL (never a default host). */
 export default function SettingsSyncScreen() {
+  const router = useRouter();
   const serverUrl = getServerUrl();
   return (
     <View style={styles.root} testID="settings-sync">
@@ -16,6 +18,17 @@ export default function SettingsSyncScreen() {
       <Text testID="settings-sync-url" style={styles.value}>
         {serverUrl ?? '—'}
       </Text>
+      <Pressable
+        testID="settings-change-server"
+        style={styles.button}
+        onPress={() => {
+          router.push({ pathname: '/server-setup', params: { change: '1' } });
+        }}
+        accessibilityRole="button"
+        accessibilityLabel={t('settings.sync.changeServer')}
+      >
+        <Text style={styles.buttonLabel}>{t('settings.sync.changeServer')}</Text>
+      </Pressable>
     </View>
   );
 }
@@ -46,5 +59,17 @@ const styles = StyleSheet.create({
   value: {
     fontSize: 16,
     color: '#18181b',
+  },
+  button: {
+    marginTop: 8,
+    backgroundColor: '#18181b',
+    borderRadius: 8,
+    paddingVertical: 12,
+    alignItems: 'center',
+  },
+  buttonLabel: {
+    color: '#fafafa',
+    fontSize: 16,
+    fontWeight: '600',
   },
 });

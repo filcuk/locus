@@ -1,5 +1,5 @@
 import { Link, useRouter } from 'expo-router';
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Pressable,
@@ -9,7 +9,13 @@ import {
   View,
 } from 'react-native';
 
-import { messageForAuthError, login } from '@/auth';
+import {
+  isAuthCancelled,
+  login,
+  messageForAuthError,
+} from '@/auth';
+import { getServerUrl } from '@/config/server-url';
+import { ConnectionProgress } from '@/features/connection/ConnectionProgress';
 import { t } from '@/i18n';
 
 export default function LoginScreen() {
@@ -18,25 +24,42 @@ export default function LoginScreen() {
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [attempt, setAttempt] = useState(1);
+  const controller = useRef<AbortController | null>(null);
+  const serverUrl = getServerUrl() ?? '';
 
   const onSubmit = async () => {
+    const requestController = new AbortController();
+    controller.current = requestController;
     setError(null);
     setBusy(true);
+    setAttempt(1);
     try {
-      await login({ email: email.trim(), password });
+      await login(
+        { email: email.trim(), password },
+        {
+          signal: requestController.signal,
+          onProgress: ({ attempt: nextAttempt }) => {
+            setAttempt(nextAttempt);
+          },
+        },
+      );
       router.replace('/(app)');
     } catch (err) {
-      setError(
-        messageForAuthError(err, {
-          known: {
-            invalid_credentials: t('auth.login.invalidCredentials'),
-            rate_limited: t('auth.errors.rateLimited'),
-          },
-          network: t('auth.errors.network'),
-          generic: t('auth.errors.generic'),
-        }),
-      );
+      if (!isAuthCancelled(err)) {
+        setError(
+          messageForAuthError(err, {
+            known: {
+              invalid_credentials: t('auth.login.invalidCredentials'),
+              rate_limited: t('auth.errors.rateLimited'),
+            },
+            network: t('auth.errors.network'),
+            generic: t('auth.errors.generic'),
+          }),
+        );
+      }
     } finally {
+      controller.current = null;
       setBusy(false);
     }
   };
@@ -79,6 +102,16 @@ export default function LoginScreen() {
           {error}
         </Text>
       ) : null}
+      {busy ? (
+        <ConnectionProgress
+          target={serverUrl}
+          attempt={attempt}
+          maxAttempts={1}
+          onCancel={() => {
+            controller.current?.abort();
+          }}
+        />
+      ) : null}
 
       <Pressable
         testID="auth-login-submit"
@@ -106,6 +139,13 @@ export default function LoginScreen() {
         testID="auth-login-forgot"
       >
         {t('auth.login.toForgot')}
+      </Link>
+      <Link
+        href="/server-setup?change=1"
+        style={styles.link}
+        testID="auth-login-change-server"
+      >
+        {t('settings.sync.changeServer')}
       </Link>
     </View>
   );

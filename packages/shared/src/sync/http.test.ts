@@ -3,6 +3,7 @@ import { describe, expect, it, vi } from 'vitest';
 import { newEntityId } from '../ids.js';
 import { emptySyncChanges } from '../schemas/sync.js';
 import {
+  SyncCancelledError,
   SyncHttpError,
   createSyncClient,
   proveSyncRoundTrip,
@@ -157,5 +158,59 @@ describe('sync HTTP client (DESIGN §5 wire)', () => {
     expect(result.pull.changes.places.created.some((p) => p.id === PLACE)).toBe(
       true,
     );
+  });
+
+  it('retries transient transport responses with bounded backoff', async () => {
+    const sleeps: number[] = [];
+    let calls = 0;
+    const client = createSyncClient({
+      baseUrl: 'https://locus.example',
+      userId: USER,
+      deviceId: DEVICE_A,
+      fetch: async () => {
+        calls += 1;
+        if (calls < 3) {
+          return Response.json({ message: 'temporary failure' }, { status: 503 });
+        }
+        return Response.json({ changes: emptySyncChanges(), timestamp: 4 });
+      },
+      sleep: async (ms) => {
+        sleeps.push(ms);
+      },
+    });
+
+    await expect(client.pull(0)).resolves.toMatchObject({ timestamp: 4 });
+    expect(calls).toBe(3);
+    expect(sleeps).toEqual([500, 1_000]);
+  });
+
+  it('cancels a transport attempt without retrying', async () => {
+    const controller = new AbortController();
+    const sleeps: number[] = [];
+    let calls = 0;
+    const client = createSyncClient({
+      baseUrl: 'https://locus.example',
+      userId: USER,
+      deviceId: DEVICE_A,
+      signal: controller.signal,
+      fetch: async (_input, init) => {
+        calls += 1;
+        return new Promise<Response>((_resolve, reject) => {
+          init?.signal?.addEventListener('abort', () => {
+            reject(new Error('aborted'));
+          });
+        });
+      },
+      sleep: async (ms) => {
+        sleeps.push(ms);
+      },
+    });
+
+    const request = client.pull(0);
+    controller.abort();
+
+    await expect(request).rejects.toBeInstanceOf(SyncCancelledError);
+    expect(calls).toBe(1);
+    expect(sleeps).toEqual([]);
   });
 });
