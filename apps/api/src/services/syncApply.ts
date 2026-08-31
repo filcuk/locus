@@ -530,8 +530,14 @@ async function applyArea(
     };
   }
   const row = parsed.data;
+  let existing: typeof areas.$inferSelect | undefined;
   if (op === 'update') {
     await assertCan(ctx.db, ctx.principal, 'edit', { type: 'area', id: row.id });
+    [existing] = await ctx.db
+      .select()
+      .from(areas)
+      .where(eq(areas.id, row.id))
+      .limit(1);
   }
 
   // geom_geojson is source of truth; bbox is always derived on write (DESIGN §4).
@@ -555,7 +561,8 @@ async function applyArea(
   const now = new Date().toISOString();
   const values = {
     id: row.id,
-    ownerId: op === 'create' ? ctx.principal.userId : row.owner_id,
+    // Ownership and creation time are server-controlled once the row exists.
+    ownerId: existing?.ownerId ?? ctx.principal.userId,
     title: row.title,
     description: row.description ?? null,
     geomGeojson: geom,
@@ -564,16 +571,28 @@ async function applyArea(
     bboxMaxLat: bbox.bbox_max_lat,
     bboxMaxLon: bbox.bbox_max_lon,
     visibility: row.visibility,
-    createdAt: row.created_at,
+    createdAt: existing?.createdAt ?? row.created_at,
     updatedAt: now,
     updatedBy: ctx.principal.userId,
-    deletedAt: row.deleted_at ?? null,
+    deletedAt: existing?.deletedAt ?? null,
   };
 
-  if (op === 'create') {
-    await ctx.db.insert(areas).values(values);
-  } else {
-    await ctx.db.update(areas).set(values).where(eq(areas.id, row.id));
+  try {
+    if (op === 'create') {
+      await ctx.db.insert(areas).values(values);
+    } else {
+      await ctx.db.update(areas).set(values).where(eq(areas.id, row.id));
+    }
+  } catch (err) {
+    if (isPgConstraintError(err)) {
+      return {
+        table: 'areas',
+        id: row.id,
+        code: 'VALIDATION_FAILED',
+        message: 'area write violated a database constraint',
+      };
+    }
+    throw err;
   }
 
   await appendChange(ctx.db, {

@@ -52,6 +52,46 @@ describe('entity schemas (DESIGN §4)', () => {
     expect(parsed.success).toBe(false);
   });
 
+  it('accepts multipolygon geometry with a hole', () => {
+    const parsed = AreaGeometrySchema.safeParse({
+      type: 'MultiPolygon',
+      coordinates: [
+        [
+          [
+            [0, 0],
+            [4, 0],
+            [4, 4],
+            [0, 4],
+            [0, 0],
+          ],
+          [
+            [1, 1],
+            [1, 2],
+            [2, 2],
+            [2, 1],
+            [1, 1],
+          ],
+        ],
+      ],
+    });
+    expect(parsed.success).toBe(true);
+  });
+
+  it('rejects a degenerate polygon ring', () => {
+    const parsed = AreaGeometrySchema.safeParse({
+      type: 'Polygon',
+      coordinates: [
+        [
+          [0, 0],
+          [0, 0],
+          [0, 0],
+          [0, 0],
+        ],
+      ],
+    });
+    expect(parsed.success).toBe(false);
+  });
+
   it('rejects a point that sets both place_id and area_id', () => {
     const parsed = PointSchema.safeParse({
       id: newEntityId(),

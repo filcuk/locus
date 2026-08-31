@@ -1,6 +1,7 @@
 import { Database } from '@nozbe/watermelondb';
 import LokiJSAdapter from '@nozbe/watermelondb/adapters/lokijs';
 import { describe, expect, it } from 'vitest';
+import type { AreaGeometry } from '@locus/shared';
 
 import { modelClasses } from '../models';
 import { migrations } from '../migrations';
@@ -133,6 +134,29 @@ describe('offline place/point writers (WatermelonDB)', () => {
     expect((nestedAfter as { deletedAt: Date | null }).deletedAt).toBeTruthy();
     const directAfter = await db.get('points').find(direct.id);
     expect((directAfter as { deletedAt: Date | null }).deletedAt).toBeTruthy();
+  });
+
+  it('rejects invalid area geometry before writing locally', async () => {
+    const db = memoryDatabase();
+    const invalidGeometry = {
+      type: 'Polygon',
+      coordinates: [
+        [
+          [0, 0],
+          [0, 0],
+          [0, 0],
+          [0, 0],
+        ],
+      ],
+    } as unknown as AreaGeometry;
+
+    await expect(
+      createAreaLocal(db, {
+        ownerId: OWNER,
+        title: 'Invalid area',
+        geom: invalidGeometry,
+      }),
+    ).rejects.toThrow(/unique vertices/);
   });
 
   it('creates a collection with members and cascades soft-delete', async () => {

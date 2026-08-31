@@ -2,7 +2,7 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { and, eq, isNull } from 'drizzle-orm';
 
 import { createApp } from '../src/index.js';
-import { areas, changeLog, places, points, users } from '../src/db/schema.js';
+import { areas, changeLog, places, points, shares, users } from '../src/db/schema.js';
 import { startPostgresFixture, stopPostgresFixture, type PgFixture } from './pg.js';
 
 const OWNER = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa';
@@ -170,6 +170,24 @@ describe('areas domain + sync apply (Testcontainers)', () => {
     });
     expect(directPoint.status).toBe(201);
 
+    await fx.handle.db.insert(shares).values({
+      id: '12121212-1212-4121-8121-121212121212',
+      resourceType: 'area',
+      resourceId: AREA,
+      granteeUserId: OTHER,
+      permission: 'edit',
+      createdBy: OWNER,
+      createdAt: NOW,
+    });
+    const tamperedUpdate = await app.request(`/areas/${AREA}`, {
+      method: 'PUT',
+      headers: headers(OTHER),
+      body: JSON.stringify(areaBody(AREA, OTHER, 'Shared edit')),
+    });
+    expect(tamperedUpdate.status).toBe(200);
+    expect(((await tamperedUpdate.json()) as { owner_id: string }).owner_id).toBe(OWNER);
+    await fx.handle.db.delete(shares);
+
     const forbidden = await app.request(`/areas/${AREA}`, {
       method: 'PUT',
       headers: headers(OTHER),
@@ -283,7 +301,42 @@ describe('areas domain + sync apply (Testcontainers)', () => {
       }),
     });
     expect(areaPush.status).toBe(200);
-    expect(((await areaPush.json()) as { applied: number }).applied).toBe(1);
+    const areaPushBody = (await areaPush.json()) as {
+      applied: number;
+      timestamp: number;
+      rejected: unknown[];
+    };
+    expect(areaPushBody.applied).toBe(1);
+    expect(areaPushBody.rejected).toEqual([]);
+
+    const replay = await app.request('/sync/push', {
+      method: 'POST',
+      headers: headers(OWNER),
+      body: JSON.stringify({
+        push_id: AREA_PUSH,
+        cursor,
+        device_id: DEVICE,
+        changes: {
+          areas: {
+            created: [areaBody(areaId, OWNER, 'Push area')],
+            updated: [],
+            deleted: [],
+          },
+        },
+      }),
+    });
+    expect(replay.status).toBe(200);
+    expect(await replay.json()).toEqual(areaPushBody);
+
+    const unauthorizedPull = await app.request(
+      `/sync/pull?cursor=0&device_id=${otherDevice}&schema_version=1`,
+      { headers: headers(OTHER) },
+    );
+    expect(unauthorizedPull.status).toBe(200);
+    const unauthorizedBody = (await unauthorizedPull.json()) as {
+      changes: { areas: { created: Array<{ id: string }> } };
+    };
+    expect(unauthorizedBody.changes.areas.created.some((area) => area.id === areaId)).toBe(false);
 
     const [pushed] = await fx.handle.db.select().from(areas).where(eq(areas.id, areaId));
     expect(pushed?.bboxMinLat).toBe(0);
